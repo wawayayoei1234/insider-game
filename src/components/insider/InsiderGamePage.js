@@ -13,6 +13,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  CircularProgress,
   Chip,
 } from "@mui/material";
 
@@ -43,6 +44,7 @@ export default function InsiderGamePage() {
   const [room, setRoom] = useState(null);
   const [selfId, setSelfId] = useState(null);
   const [error, setError] = useState("");
+  const [connecting, setConnecting] = useState(null);
 
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
@@ -60,6 +62,8 @@ export default function InsiderGamePage() {
       return;
     }
 
+    setConnecting(mode); 
+
     const url =
       WS_URL +
       `?room=${encodeURIComponent(roomCodeInput.trim())}&name=${encodeURIComponent(
@@ -71,16 +75,19 @@ export default function InsiderGamePage() {
     socket.onopen = () => {
       console.log("WS connected");
       setPhase("game");
+      setConnecting(null); 
     };
 
     socket.onclose = () => {
       console.log("WS closed");
       wsRef.current = null;
+      setConnecting(null); 
     };
 
     socket.onerror = (e) => {
       console.error("WS error", e);
       setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+      setConnecting(null); 
     };
 
     socket.onmessage = (event) => {
@@ -89,6 +96,7 @@ export default function InsiderGamePage() {
 
         if (msg.type === "error") {
           setError(msg.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์");
+          setConnecting(null);
           return;
         }
 
@@ -105,6 +113,7 @@ export default function InsiderGamePage() {
 
     wsRef.current = socket;
   };
+
 
   const send = (payload) => {
     const socket = wsRef.current;
@@ -217,24 +226,23 @@ export default function InsiderGamePage() {
               </Box>
             )}
 
-            <Box
-              sx={{
-                mt: 3,
-                display: "flex",
-                gap: 2,
-              }}
-            >
-              <Button
-                fullWidth
-                variant="contained"
-                sx={{
+           <Box sx={{mt: 3,display: "flex",gap: 2,}}>
+              <Button fullWidth variant="contained" sx={{
                   bgcolor: "#6366f1",
                   "&:hover": { bgcolor: "#4f46e5" },
                 }}
                 onClick={() => connectToRoom("create")}
+                disabled={connecting !== null} 
+                startIcon={
+                  connecting === "create" ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : null
+                }
               >
-                สร้างห้องใหม่
+                {connecting === "create" ? "กำลังสร้าง..." : "สร้างห้องใหม่"}
               </Button>
+
+              {/* ปุ่มเข้าห้อง */}
               <Button
                 fullWidth
                 variant="outlined"
@@ -247,17 +255,23 @@ export default function InsiderGamePage() {
                   },
                 }}
                 onClick={() => connectToRoom("join")}
+                disabled={connecting !== null}
+                startIcon={
+                  connecting === "join" ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : null
+                }
               >
-                เข้าห้อง
+                {connecting === "join" ? "กำลังเข้าห้อง..." : "เข้าห้อง"}
               </Button>
             </Box>
+
           </Paper>
         </Container>
       </Box>
     );
   }
 
-  // ยังไม่รู้ข้อมูลห้อง
   if (!room) {
     return (
       <Box
@@ -409,12 +423,21 @@ export default function InsiderGamePage() {
           </Grid>
         </Paper>
 
-        {/* Layout */}
         <Grid container columns={12} spacing={3}>
-          {/* Sidebar players */}
-        <Grid size={{ xs: 12, md: 5 }}>
-        <PlayerTable players={players} selfId={selfId} room={room} />
-        </Grid>
+  
+      <Grid size={{ xs: 12, md: 5 }}>
+        <PlayerTable
+          players={players}
+          selfId={selfId}
+          room={room}
+          isHost={isHost}
+          onKick={(targetId) => {
+            const ok = window.confirm("ต้องการเตะผู้เล่นคนนี้ออกจากห้องหรือไม่?");
+            if (!ok) return;
+            send({ type: "kick", targetId });
+          }}
+        />
+      </Grid>
 
         <Grid size={{ xs: 12, md: 7 }}>
         <Paper

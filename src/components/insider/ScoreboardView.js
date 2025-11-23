@@ -1,6 +1,18 @@
-
+// src/components/insider/ScoreboardView.jsx
 import React from "react";
-import {Box,Typography,Card,CardContent,Alert,Table,TableBody,TableRow,TableCell,Chip,Button,} from "@mui/material";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Alert,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
+  Chip,
+  Button,
+} from "@mui/material";
 
 export default function ScoreboardView({
   room,
@@ -17,6 +29,9 @@ export default function ScoreboardView({
     ? players.find((p) => p.id === room.judgeId)
     : null;
 
+  const endedByTimeout = room.roundEndByTimeout;   // ⭐ มาจาก backend
+  const secretWord = room.secretWord || "";
+
   // ไม่แสดงกรรมการในตารางคะแนน
   const visiblePlayers = sorted.filter((p) => p.id !== room.judgeId);
 
@@ -26,35 +41,72 @@ export default function ScoreboardView({
         กระดานคะแนน (จบรอบนี้)
       </Typography>
 
-      {insider && (
+      {/* ✅ เคสเวลาหมด: ไม่มีโหวต, ไม่มีใครได้แต้ม, โชว์แค่คำปริศนา */}
+      {endedByTimeout ? (
         <Card
           sx={{
             mb: 2,
-            bgcolor: "#ecfdf5",
+            bgcolor: "#fee2e2",
             borderRadius: 3,
           }}
         >
           <CardContent>
             <Typography variant="body2" color="text.secondary">
-              Insider ในรอบนี้คือ:
+              เวลาหมดก่อนที่จะทายคำถูก รอบนี้ไม่มีใครได้แต้ม
             </Typography>
-            <Typography
-              variant="h6"
-              sx={{ mt: 1 }}
-              color="#16a34a"
-              fontWeight="bold"
-            >
-              {insider.name}
-            </Typography>
+            {secretWord && (
+              <Typography
+                variant="h6"
+                sx={{ mt: 1 }}
+                color="#b91c1c"
+                fontWeight="bold"
+              >
+                คำปริศนาคือ: {secretWord}
+              </Typography>
+            )}
           </CardContent>
         </Card>
+      ) : (
+        // 🎯 เคสปกติ: ทายถูก → ไปโหวต → เฉลย Insider + แสดงคำ
+        insider && (
+          <Card
+            sx={{
+              mb: 2,
+              bgcolor: "#ecfdf5",
+              borderRadius: 3,
+            }}
+          >
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">
+                Insider ในรอบนี้คือ:
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{ mt: 1 }}
+                color="#16a34a"
+                fontWeight="bold"
+              >
+                {insider.name}
+              </Typography>
+              {secretWord && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  คำปริศนาที่ใช้ในรอบนี้:{" "}
+                  <Box component="span" fontWeight="bold">
+                    {secretWord}
+                  </Box>
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        )
       )}
 
       {judge && (
-        <Alert
-          severity="info"
-          sx={{ mb: 2, borderRadius: 2 }}
-        >
+        <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
           กรรมการในรอบนี้:{" "}
           <Box component="span" fontWeight="bold">
             {judge.name}
@@ -63,6 +115,7 @@ export default function ScoreboardView({
         </Alert>
       )}
 
+      {/* ตารางคะแนนรวม (คะแนนสะสมจากทุก ๆ รอบ) */}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         คะแนนรวมทั้งหมด
       </Typography>
@@ -86,7 +139,8 @@ export default function ScoreboardView({
               <TableCell>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography variant="body2">{p.name}</Typography>
-                  {p.id === insiderId && (
+                  {/* จะซ่อน tag INSIDER ตอน timeout ก็ได้ (ตรงนี้เช็คแล้วว่า !endedByTimeout) */}
+                  {!endedByTimeout && p.id === insiderId && (
                     <Chip
                       label="INSIDER"
                       size="small"

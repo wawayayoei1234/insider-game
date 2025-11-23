@@ -4,6 +4,7 @@ import { Box, Typography, Button } from "@mui/material";
 
 export default function TimerView({ room, me, isJudge, onGuessCorrect }) {
   const word = room.secretWord || "";
+  const isInsider = me?.role === "insider";
 
   return (
     <Box>
@@ -21,16 +22,20 @@ export default function TimerView({ room, me, isJudge, onGuessCorrect }) {
           <Box component="span" fontWeight="bold">
             {me?.role === "judge"
               ? "กรรมการ"
-              : me?.role === "insider"
+              : isInsider
               ? "Insider"
               : "ผู้เล่นทั่วไป"}
           </Box>
         </Typography>
 
-        {isJudge ? (
+        {/* ⭐ ให้กรรมการ + Insider เห็นคำปริศนา */}
+        {(isJudge || isInsider) ? (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="success.main">
-              คำปริศนาของรอบนี้:
+            <Typography
+              variant="body2"
+              color={isJudge ? "success.main" : "error.main"}
+            >
+              {isJudge ? "คำปริศนาของรอบนี้:" : "คุณคือ Insider คำปริศนาคือ:"}
             </Typography>
             <Box
               sx={{
@@ -51,7 +56,7 @@ export default function TimerView({ room, me, isJudge, onGuessCorrect }) {
               color="text.secondary"
               sx={{ display: "block", mt: 1 }}
             >
-              อย่าพูดคำนี้ออกมาโดยตรง ให้ใบ้ตามกติกาแทน
+              อย่าพูดคำนี้ออกมาตรง ๆ ให้ใบ้แบบแนบเนียนแทน
             </Typography>
           </Box>
         ) : (

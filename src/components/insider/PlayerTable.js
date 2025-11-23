@@ -1,8 +1,17 @@
 // src/components/insider/PlayerTable.jsx
 import React from "react";
-import { Box, Typography, Chip, Paper, Stack } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Chip,
+  Paper,
+  Stack,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 
-export default function PlayerTable({ players, selfId, room }) {
+export default function PlayerTable({ players, selfId, room, isHost, onKick }) {
   if (!players || players.length === 0) return null;
 
   const seats = players;
@@ -56,13 +65,13 @@ export default function PlayerTable({ players, selfId, room }) {
 
         {/* ที่นั่งแต่ละคนวางรอบโต๊ะ */}
         {seats.map((p, index) => {
-          const angle = (2 * Math.PI * index) / seats.length - Math.PI / 2; // เริ่มบนสุด
+          const angle = (2 * Math.PI * index) / seats.length - Math.PI / 2;
           const top = 50 + radius * Math.sin(angle);
           const left = 50 + radius * Math.cos(angle);
 
           const isMe = p.id === selfId;
           const isJudge = p.id === room?.judgeId;
-          const isHost = p.id === room?.hostId;
+          const isHostSeat = p.id === room?.hostId;
 
           return (
             <Box
@@ -88,6 +97,10 @@ export default function PlayerTable({ players, selfId, room }) {
                   bgcolor: isMe ? "#e0f2fe" : "white",
                   border: isMe ? "2px solid #38bdf8" : "1px solid #e5e7eb",
                   minWidth: 80,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 0.5,
                 }}
               >
                 <Typography
@@ -101,11 +114,31 @@ export default function PlayerTable({ players, selfId, room }) {
                 >
                   {p.name}
                 </Typography>
+
+                {/* ปุ่มเตะ – เฉพาะ Host และห้ามเตะตัวเอง */}
+                {isHost && !isMe && (
+                  <Tooltip title="เตะออกจากห้อง">
+                    <IconButton
+                      size="small"
+                      onClick={() => onKick && onKick(p.id)}
+                      sx={{
+                        ml: 0.5,
+                        p: 0.2,
+                        color: "#b91c1c",
+                        "&:hover": {
+                          bgcolor: "#fee2e2",
+                        },
+                      }}
+                    >
+                      <PersonRemoveIcon fontSize="inherit" />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Paper>
 
               {/* role badge */}
               <Stack direction="row" spacing={0.5}>
-                {isHost && (
+                {isHostSeat && (
                   <Chip
                     label="HOST"
                     size="small"
