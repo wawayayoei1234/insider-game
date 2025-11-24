@@ -49,6 +49,29 @@ export default function InsiderGamePage() {
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
 
+
+  const handleKicked = (message) => {
+  setError(message || "คุณถูกเชิญออกจากห้อง");
+  setPhase("join");
+  setRoom(null);
+  setSelfId(null);
+  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    wsRef.current.close();
+  }
+  wsRef.current = null;
+};
+const handleLeaveRoom = () => {
+  setError("");        
+  setRoom(null);      
+  setSelfId(null);     
+  setPhase("join");    
+
+  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    wsRef.current.close();
+  }
+  wsRef.current = null;
+};
+
   const connectToRoom = (mode) => {
     setError("");
 
@@ -95,8 +118,12 @@ export default function InsiderGamePage() {
         const msg = JSON.parse(event.data);
 
         if (msg.type === "error") {
-          setError(msg.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์");
-          setConnecting(null);
+          const text = msg.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์";
+          if (text.includes("ถูกเชิญออกจากห้องโดย Host")) {
+            handleKicked(text);
+            return;
+          }
+          setError(text);
           return;
         }
 
@@ -110,6 +137,7 @@ export default function InsiderGamePage() {
         console.error("parse message error", err);
       }
     };
+
 
     wsRef.current = socket;
   };
@@ -301,25 +329,10 @@ export default function InsiderGamePage() {
       }}
     >
       <Container maxWidth="lg">
-        {/* Header */}
+
         <Box sx={{ mb: 3 }}>
-          <Paper
-            elevation={4}
-            sx={{
-              p: 2.5,
-              borderRadius: 3,
-              background:
-                "linear-gradient(120deg, #6366f1, #ec4899 60%, #22c55e)",
-              color: "white",
-            }}
-          >
-            <Grid
-              container
-              columns={12}
-              spacing={2}
-              alignItems="center"
-              justifyContent="space-between"
-            >
+          <Paper elevation={4} sx={{p: 2.5,borderRadius: 3,background:"linear-gradient(120deg, #6366f1, #ec4899 60%, #22c55e)",color: "white",}}>
+            <Grid container columns={12} spacing={2} alignItems="center" justifyContent="space-between">
               <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="h5" fontWeight="bold">
                   Insider Game
@@ -331,22 +344,15 @@ export default function InsiderGamePage() {
                   </Box>
                 </Typography>
               </Grid>
-              <Grid
-                size={{ xs: 12, md: 6 }}
-                sx={{ textAlign: { xs: "left", md: "right" } }}
-              >
+              <Grid size={{ xs: 12, md: 6 }}sx={{ textAlign: { xs: "left", md: "right" } }}>
                 <Typography variant="body2" component="div">
                   คุณคือ{" "}
                     <Box component="span" fontWeight="bold">
                       {me?.name || nameInput}
                     </Box>
                   {me?.role && (
-                    <Chip
-                      size="small"
-                      label={me.role.toUpperCase()}
-                      sx={{
-                        ml: 1,
-                        bgcolor: "rgba(255,255,255,0.18)",
+                    <Chip size="small"label={me.role.toUpperCase()}
+                      sx={{ml: 1,bgcolor: "rgba(255,255,255,0.18)",
                         color: "white",
                         borderRadius: 999,
                       }}
@@ -504,6 +510,22 @@ export default function InsiderGamePage() {
           </Grid>
         </Grid>
       </Container>
+            <Button
+        variant="contained"
+        color="error"
+        onClick={handleLeaveRoom}
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 1300,
+          borderRadius: 999,
+          px: 3,
+          boxShadow: 6,
+        }}
+      >
+        ออกจากห้อง
+      </Button>
     </Box>
   );
 }
