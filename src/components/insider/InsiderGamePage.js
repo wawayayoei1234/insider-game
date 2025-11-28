@@ -10,9 +10,6 @@ import {
   TextField,
   Typography,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
   CircularProgress,
   Chip,
 } from "@mui/material";
@@ -22,7 +19,7 @@ import TimerView from "./TimerView";
 import VotingView from "./VotingView";
 import ScoreboardView from "./ScoreboardView";
 import PlayerTable from "./PlayerTable";
-
+import ChatPanel from "./ChatPanel";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001/ws";
 
@@ -35,7 +32,7 @@ function formatTime(sec) {
 }
 
 export default function InsiderGamePage() {
-  const [phase, setPhase] = useState("join"); // join | game
+  const [phase, setPhase] = useState("join");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [nameInput, setNameInput] = useState("");
 
@@ -44,33 +41,36 @@ export default function InsiderGamePage() {
   const [room, setRoom] = useState(null);
   const [selfId, setSelfId] = useState(null);
   const [error, setError] = useState("");
-  const [connecting, setConnecting] = useState(null);
+  const [connecting, setConnecting] = useState(null); // 'create' | 'join' | null
 
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
 
+  const [messages, setMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
 
   const handleKicked = (message) => {
-  setError(message || "คุณถูกเชิญออกจากห้อง");
-  setPhase("join");
-  setRoom(null);
-  setSelfId(null);
-  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-    wsRef.current.close();
-  }
-  wsRef.current = null;
-};
-const handleLeaveRoom = () => {
-  setError("");        
-  setRoom(null);      
-  setSelfId(null);     
-  setPhase("join");    
+    setError(message || "คุณถูกเชิญออกจากห้อง");
+    setPhase("join");
+    setRoom(null);
+    setSelfId(null);
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
+    wsRef.current = null;
+  };
 
-  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-    wsRef.current.close();
-  }
-  wsRef.current = null;
-};
+  const handleLeaveRoom = () => {
+    setError("");
+    setRoom(null);
+    setSelfId(null);
+    setPhase("join");
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
+    wsRef.current = null;
+  };
 
   const connectToRoom = (mode) => {
     setError("");
@@ -85,33 +85,33 @@ const handleLeaveRoom = () => {
       return;
     }
 
-    setConnecting(mode); 
+    setConnecting(mode);
 
     const url =
       WS_URL +
-      `?room=${encodeURIComponent(roomCodeInput.trim())}&name=${encodeURIComponent(
-        nameInput.trim()
-      )}&mode=${mode}`;
+      `?room=${encodeURIComponent(
+        roomCodeInput.trim()
+      )}&name=${encodeURIComponent(nameInput.trim())}&mode=${mode}`;
 
     const socket = new WebSocket(url);
+    wsRef.current = socket;
 
     socket.onopen = () => {
       console.log("WS connected");
-      setPhase("game");
-      setConnecting(null); 
     };
 
     socket.onclose = () => {
       console.log("WS closed");
       wsRef.current = null;
-      setConnecting(null); 
+      setConnecting(null);
     };
 
     socket.onerror = (e) => {
       console.error("WS error", e);
       setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
-      setConnecting(null); 
+      setConnecting(null);
     };
+
 
     socket.onmessage = (event) => {
       try {
@@ -119,29 +119,60 @@ const handleLeaveRoom = () => {
 
         if (msg.type === "error") {
           const text = msg.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์";
+          
+        if (mode === "create" && text.includes("ห้องนี้มีอยู่แล้ว")) {
+          setError(text);
+          setConnecting(null);
+          return;
+        }
           if (text.includes("ถูกเชิญออกจากห้องโดย Host")) {
             handleKicked(text);
             return;
           }
+
+          if (mode === "join" && text.includes("room not found")) {
+            setError("ไม่พบห้องนี้ อาจพิมพ์รหัสผิด หรือห้องถูกลบแล้ว");
+            setPhase("join");
+            setRoom(null);
+            setSelfId(null);
+            setConnecting(null);
+            if (
+              wsRef.current &&
+              wsRef.current.readyState === WebSocket.OPEN
+            ) {
+              wsRef.current.close();
+            }
+            wsRef.current = null;
+            return;
+          }
+
+ 
           setError(text);
+          setConnecting(null);
           return;
         }
 
+  
+        if (msg.type === "chat") {
+          setMessages((prev) => [...prev, msg]);
+          return;
+        }
+
+   
         if (msg.type === "room") {
           setRoom(msg.room || null);
           if (msg.selfId) {
             setSelfId(msg.selfId);
           }
+ 
+          setPhase("game");
+          setConnecting(null);
         }
       } catch (err) {
         console.error("parse message error", err);
       }
     };
-
-
-    wsRef.current = socket;
   };
-
 
   const send = (payload) => {
     const socket = wsRef.current;
@@ -172,8 +203,9 @@ const handleLeaveRoom = () => {
   };
 
   const handleStartRound = () => {
-    send({ type: "start_round", duration: 180, secretWord });
+    send({ type: "start_round", secretWord });
   };
+
 
   const handleGuessCorrect = () => {
     if (!isJudge) return;
@@ -191,9 +223,29 @@ const handleLeaveRoom = () => {
     send({ type: "next_round" });
   };
 
+  const chatEnabled = room?.chatEnabled ?? true;
+  const handleSendChat = () => {
+    if (!chatEnabled) return;
+    const text = chatInput.trim();
+    if (!text) return;
+    send({ type: "chat", text });
+    setChatInput("");
+  };
+  const handleToggleChat = (enabled) => {
+    send({ type: "set_chat_enabled", chatEnabled: enabled });
+  };
+  
   if (phase === "join") {
     return (
-      <Box sx={{minHeight: "100vh",bgcolor: "linear-gradient(135deg, #e0f2fe, #f5e9ff)",display: "flex",alignItems: "center",justifyContent: "center",}}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #e0f2fe, #f5e9ff)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Container maxWidth="sm">
           <Paper
             elevation={8}
@@ -254,13 +306,16 @@ const handleLeaveRoom = () => {
               </Box>
             )}
 
-           <Box sx={{mt: 3,display: "flex",gap: 2,}}>
-              <Button fullWidth variant="contained" sx={{
+            <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{
                   bgcolor: "#6366f1",
                   "&:hover": { bgcolor: "#4f46e5" },
                 }}
                 onClick={() => connectToRoom("create")}
-                disabled={connecting !== null} 
+                disabled={connecting !== null}
                 startIcon={
                   connecting === "create" ? (
                     <CircularProgress size={18} color="inherit" />
@@ -270,7 +325,6 @@ const handleLeaveRoom = () => {
                 {connecting === "create" ? "กำลังสร้าง..." : "สร้างห้องใหม่"}
               </Button>
 
-              {/* ปุ่มเข้าห้อง */}
               <Button
                 fullWidth
                 variant="outlined"
@@ -293,13 +347,13 @@ const handleLeaveRoom = () => {
                 {connecting === "join" ? "กำลังเข้าห้อง..." : "เข้าห้อง"}
               </Button>
             </Box>
-
           </Paper>
         </Container>
       </Box>
     );
   }
 
+  // ---------- phase: GAME แต่ยังไม่มี room ----------
   if (!room) {
     return (
       <Box
@@ -324,15 +378,30 @@ const handleLeaveRoom = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "linear-gradient(135deg, #eff6ff, #fdf2ff)",
+        background: "linear-gradient(135deg, #eff6ff, #fdf2ff)",
         py: 4,
       }}
     >
       <Container maxWidth="lg">
-
+        {/* HEADER */}
         <Box sx={{ mb: 3 }}>
-          <Paper elevation={4} sx={{p: 2.5,borderRadius: 3,background:"linear-gradient(120deg, #6366f1, #ec4899 60%, #22c55e)",color: "white",}}>
-            <Grid container columns={12} spacing={2} alignItems="center" justifyContent="space-between">
+          <Paper
+            elevation={4}
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              background:
+                "linear-gradient(120deg, #6366f1, #ec4899 60%, #22c55e)",
+              color: "white",
+            }}
+          >
+            <Grid
+              container
+              columns={12}
+              spacing={2}
+              alignItems="center"
+              justifyContent="space-between"
+            >
               <Grid size={{ xs: 12, md: 6 }}>
                 <Typography variant="h5" fontWeight="bold">
                   Insider Game
@@ -344,15 +413,22 @@ const handleLeaveRoom = () => {
                   </Box>
                 </Typography>
               </Grid>
-              <Grid size={{ xs: 12, md: 6 }}sx={{ textAlign: { xs: "left", md: "right" } }}>
+              <Grid
+                size={{ xs: 12, md: 6 }}
+                sx={{ textAlign: { xs: "left", md: "right" } }}
+              >
                 <Typography variant="body2" component="div">
                   คุณคือ{" "}
-                    <Box component="span" fontWeight="bold">
-                      {me?.name || nameInput}
-                    </Box>
+                  <Box component="span" fontWeight="bold">
+                    {me?.name || nameInput}
+                  </Box>
                   {me?.role && (
-                    <Chip size="small"label={me.role.toUpperCase()}
-                      sx={{ml: 1,bgcolor: "rgba(255,255,255,0.18)",
+                    <Chip
+                      size="small"
+                      label={me.role.toUpperCase()}
+                      sx={{
+                        ml: 1,
+                        bgcolor: "rgba(255,255,255,0.18)",
                         color: "white",
                         borderRadius: 999,
                       }}
@@ -364,7 +440,7 @@ const handleLeaveRoom = () => {
           </Paper>
         </Box>
 
-        {/* Status + Timer */}
+        {/* STATUS + TIMER */}
         <Paper
           elevation={2}
           sx={{
@@ -414,7 +490,10 @@ const handleLeaveRoom = () => {
             </Grid>
             <Grid
               size={{ xs: 12, md: 4 }}
-              sx={{ textAlign: { xs: "left", md: "right" }, mt: { xs: 2, md: 0 } }}
+              sx={{
+                textAlign: { xs: "left", md: "right" },
+                mt: { xs: 2, md: 0 },
+              }}
             >
               <Typography variant="caption" color="text.secondary">
                 เวลาที่เหลือ
@@ -429,33 +508,37 @@ const handleLeaveRoom = () => {
           </Grid>
         </Paper>
 
+        {/* MAIN LAYOUT */}
         <Grid container columns={12} spacing={3}>
-  
-      <Grid size={{ xs: 12, md: 5 }}>
-        <PlayerTable
-          players={players}
-          selfId={selfId}
-          room={room}
-          isHost={isHost}
-          onKick={(targetId) => {
-            const ok = window.confirm("ต้องการเตะผู้เล่นคนนี้ออกจากห้องหรือไม่?");
-            if (!ok) return;
-            send({ type: "kick", targetId });
-          }}
-        />
-      </Grid>
+          {/* โต๊ะผู้เล่น */}
+          <Grid size={{ xs: 12, md: 5 }}>
+            <PlayerTable
+              players={players}
+              selfId={selfId}
+              room={room}
+              isHost={isHost}
+              onKick={(targetId) => {
+                const ok = window.confirm(
+                  "ต้องการเตะผู้เล่นคนนี้ออกจากห้องหรือไม่?"
+                );
+                if (!ok) return;
+                send({ type: "kick", targetId });
+              }}
+            />
+          </Grid>
 
-        <Grid size={{ xs: 12, md: 7 }}>
-        <Paper
-            elevation={2}
-            sx={{
-            p: 3,
-            borderRadius: 3,
-            bgcolor: "white",
-            border: "1px solid #e5e7eb",
-            minHeight: 260,
-            }}
-        >
+          {/* เนื้อหา phase + แชท */}
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Paper
+              elevation={2}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                bgcolor: "white",
+                border: "1px solid #e5e7eb",
+                minHeight: 260,
+              }}
+            >
               {currentState === "lobby" && (
                 <LobbyView
                   room={room}
@@ -467,6 +550,8 @@ const handleLeaveRoom = () => {
                   setSecretWord={setSecretWord}
                   onSetJudge={handleSetJudge}
                   onStartRound={handleStartRound}
+                  chatEnabled={chatEnabled}          
+                  onToggleChat={handleToggleChat} 
                 />
               )}
 
@@ -507,25 +592,45 @@ const handleLeaveRoom = () => {
                 </Typography>
               )}
             </Paper>
+            {chatEnabled && (
+              <ChatPanel
+                messages={messages}
+                me={me}
+                value={chatInput}
+                onChange={setChatInput}
+                onSend={handleSendChat}
+                enabled={chatEnabled}   
+              />
+            )}
           </Grid>
         </Grid>
       </Container>
-            <Button
-        variant="contained"
-        color="error"
-        onClick={handleLeaveRoom}
+
+<Box
         sx={{
-          position: "fixed",
-          bottom: 24,
-          right: 24,
-          zIndex: 1300,
-          borderRadius: 999,
-          px: 3,
-          boxShadow: 6,
+          position: { xs: "static", md: "fixed" },
+          bottom: { md: 24 },
+          right: { md: 24 },
+          zIndex: { md: 1300 },
+          mt: { xs: 2, md: 0 },
+          px: { xs: 2, md: 0 },
         }}
       >
-        ออกจากห้อง
-      </Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={handleLeaveRoom}
+          sx={{
+            borderRadius: 999,
+            px: { xs: 2.5, md: 3 },
+            py: { xs: 1, md: 1.2 },
+            boxShadow: { xs: 2, md: 6 },
+            width: { xs: "100%", md: "auto" },
+          }}
+        >
+          ออกจากห้อง
+        </Button>
+      </Box>
     </Box>
   );
 }

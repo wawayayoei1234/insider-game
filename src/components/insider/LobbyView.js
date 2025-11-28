@@ -1,4 +1,4 @@
-// src/components/insider/LobbyView.jsx
+
 import React from "react";
 import {
   Box,
@@ -10,6 +10,8 @@ import {
   TextField,
   Button,
   Divider,
+  FormControlLabel, 
+  Switch
 } from "@mui/material";
 
 export default function LobbyView({
@@ -22,17 +24,19 @@ export default function LobbyView({
   setSecretWord,
   onSetJudge,
   onStartRound,
+  chatEnabled,
+  onToggleChat,
 }) {
   const nonJudgeCount = room.judgeId
     ? players.filter((p) => p.id !== room.judgeId).length
     : players.length;
 
   const canStart =
-    isJudge &&
     !!room.judgeId &&
     nonJudgeCount >= 3 &&
     nonJudgeCount % 2 === 1 &&
     secretWord.trim() !== "";
+
 
   return (
     <Box>
@@ -149,6 +153,26 @@ export default function LobbyView({
         Tip: ตอนดูบทบาท / คำปริศนา ให้คนอื่นหันหลังหรือปิดตา
         เพื่อไม่ให้รู้ว่าใครเป็น Insider
       </Typography>
+            {isHost && (
+        <Box sx={{ mt: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={chatEnabled}
+                onChange={(e) => onToggleChat(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="เปิดแชทในห้องนี้"
+          />
+        </Box>
+      )}
+
+    {!isHost && !chatEnabled && (
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+        🔇 แชทถูกปิดโดย Host
+      </Typography>
+    )}
     </Box>
   );
 }
