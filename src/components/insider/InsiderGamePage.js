@@ -584,6 +584,7 @@ export default function InsiderGamePage() {
                 />
               )}
 
+
               {!["lobby", "countdown", "voting", "scoreboard"].includes(
                 currentState
               ) && (

@@ -34,7 +34,6 @@ export default function LobbyView({
   const canStart =
     !!room.judgeId &&
     nonJudgeCount >= 3 &&
-    nonJudgeCount % 2 === 1 &&
     secretWord.trim() !== "";
 
 
@@ -131,7 +130,7 @@ export default function LobbyView({
                 color="text.secondary"
                 sx={{ display: "block", mt: 1 }}
               >
-                * เงื่อนไข: ผู้เล่น (ไม่นับกรรมการ) ≥ 3 คน และเป็นจำนวนคี่
+                * เงื่อนไข: ผู้เล่น (ไม่นับกรรมการ) ≥ 3 คน 
                 และต้องพิมพ์คำปริศนาแล้ว
               </Typography>
             </Box>

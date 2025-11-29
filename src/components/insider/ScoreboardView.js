@@ -1,18 +1,7 @@
-// src/components/insider/ScoreboardView.jsx
-import React from "react";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Alert,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Button,
-} from "@mui/material";
+// ScoreboardView.js
+"use client";
+
+import { Box, Typography, Table, TableBody, TableRow, TableCell, Button, Paper, List, ListItem } from "@mui/material";
 
 export default function ScoreboardView({
   room,
@@ -25,138 +14,107 @@ export default function ScoreboardView({
   const insider = insiderId
     ? players.find((p) => p.id === insiderId)
     : null;
-  const judge = room.judgeId
-    ? players.find((p) => p.id === room.judgeId)
-    : null;
 
-  const endedByTimeout = room.roundEndByTimeout;   // ⭐ มาจาก backend
-  const secretWord = room.secretWord || "";
+  const nameById = {};
+  players.forEach((p) => {
+    nameById[p.id] = p.name;
+  });
 
-  // ไม่แสดงกรรมการในตารางคะแนน
-  const visiblePlayers = sorted.filter((p) => p.id !== room.judgeId);
+  const lastVotes = room.lastVotes || [];
 
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
-        กระดานคะแนน (จบรอบนี้)
+        กระดานคะแนน (จบรอบ)
       </Typography>
 
-      {/* ✅ เคสเวลาหมด: ไม่มีโหวต, ไม่มีใครได้แต้ม, โชว์แค่คำปริศนา */}
-      {endedByTimeout ? (
-        <Card
-          sx={{
-            mb: 2,
-            bgcolor: "#fee2e2",
-            borderRadius: 3,
-          }}
+      {room.roundEndByTimeout ? (
+        <Paper
+          variant="outlined"
+          sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: "#fef3c7" }}
         >
-          <CardContent>
-            <Typography variant="body2" color="text.secondary">
-              เวลาหมดก่อนที่จะทายคำถูก รอบนี้ไม่มีใครได้แต้ม
+          <Typography variant="body2" color="text.primary">
+            เวลาหมดก่อนที่จะทายคำได้
+            รอบนี้{" "}
+            <Box component="span" fontWeight="bold">
+              ไม่มีใครได้แต้ม
+            </Box>{" "}
+            และไม่มีการโหวต
+          </Typography>
+          {room.secretWord && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              คำปริศนาคือ:{" "}
+              <Box component="span" fontWeight="bold">
+                {room.secretWord}
+              </Box>
             </Typography>
-            {secretWord && (
-              <Typography
-                variant="h6"
-                sx={{ mt: 1 }}
-                color="#b91c1c"
-                fontWeight="bold"
-              >
-                คำปริศนาคือ: {secretWord}
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </Paper>
       ) : (
-        // 🎯 เคสปกติ: ทายถูก → ไปโหวต → เฉลย Insider + แสดงคำ
-        insider && (
-          <Card
-            sx={{
-              mb: 2,
-              bgcolor: "#ecfdf5",
-              borderRadius: 3,
-            }}
-          >
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">
-                Insider ในรอบนี้คือ:
+        <>
+          {insider && (
+            <Paper
+              variant="outlined"
+              sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: "#ecfeff" }}
+            >
+              <Typography variant="body2">
+                Insider ในรอบนี้คือ{" "}
+                <Box component="span" fontWeight="bold">
+                  {insider.name}
+                </Box>
               </Typography>
-              <Typography
-                variant="h6"
-                sx={{ mt: 1 }}
-                color="#16a34a"
-                fontWeight="bold"
-              >
-                {insider.name}
-              </Typography>
-              {secretWord && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
-                  คำปริศนาที่ใช้ในรอบนี้:{" "}
+              {room.secretWord && (
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  คำปริศนาคือ:{" "}
                   <Box component="span" fontWeight="bold">
-                    {secretWord}
+                    {room.secretWord}
                   </Box>
                 </Typography>
               )}
-            </CardContent>
-          </Card>
-        )
+            </Paper>
+          )}
+        </>
       )}
 
-      {judge && (
-        <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-          กรรมการในรอบนี้:{" "}
-          <Box component="span" fontWeight="bold">
-            {judge.name}
-          </Box>{" "}
-          (ไม่สะสมคะแนน และไม่แสดงในตารางคะแนน)
-        </Alert>
-      )}
-
-      {/* ตารางคะแนนรวม (คะแนนสะสมจากทุก ๆ รอบ) */}
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        คะแนนรวมทั้งหมด
-      </Typography>
-      <Table size="small">
+      {/* ตารางคะแนนรวม */}
+      <Table size="small" sx={{ mb: 3 }}>
         <TableBody>
-          {visiblePlayers.map((p, idx) => (
-            <TableRow
-              key={p.id}
-              sx={{
-                "& td": {
-                  borderBottomColor: "#e5e7eb",
-                },
-                bgcolor: p.id === me?.id ? "#eef2ff" : "white",
-              }}
-            >
-              <TableCell width={40}>
-                <Typography variant="caption" color="text.secondary">
-                  {idx + 1}
-                </Typography>
-              </TableCell>
+          {sorted.map((p, idx) => (
+            <TableRow key={p.id}>
+              <TableCell width={40}>{idx + 1}</TableCell>
               <TableCell>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="body2">{p.name}</Typography>
-                  {/* จะซ่อน tag INSIDER ตอน timeout ก็ได้ (ตรงนี้เช็คแล้วว่า !endedByTimeout) */}
-                  {!endedByTimeout && p.id === insiderId && (
-                    <Chip
-                      label="INSIDER"
-                      size="small"
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: p.id === me?.id ? 700 : 400,
+                    }}
+                  >
+                    {p.name}
+                  </Typography>
+                  {p.id === insiderId && (
+                    <Typography
+                      variant="caption"
                       sx={{
+                        px: 1,
+                        py: 0.2,
+                        borderRadius: 999,
                         bgcolor: "#fee2e2",
                         color: "#b91c1c",
-                        fontSize: "0.7rem",
                       }}
-                    />
+                    >
+                      INSIDER
+                    </Typography>
                   )}
                 </Box>
               </TableCell>
               <TableCell align="right">
                 <Typography
                   variant="body2"
-                  sx={{ fontFamily: "monospace" }}
+                  sx={{
+                    fontFamily: "monospace",
+                    fontWeight: p.id === me?.id ? 700 : 400,
+                  }}
                 >
                   {p.score ?? 0}
                 </Typography>
@@ -166,15 +124,37 @@ export default function ScoreboardView({
         </TableBody>
       </Table>
 
+      {/* ✅ สรุปว่าใครโหวตใครบ้าง */}
+      {lastVotes.length > 0 && !room.roundEndByTimeout && (
+        <Box sx={{ mb: 3 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ mb: 1, color: "#334155", fontWeight: 600 }}
+          >
+            สรุปการโหวตในรอบนี้
+          </Typography>
+          <List dense>
+            {lastVotes.map((v, idx) => (
+              <ListItem key={idx} sx={{ px: 0 }}>
+                <Typography variant="body2">
+                  <Box component="span" fontWeight="bold">
+                    {nameById[v.voterId] || "ไม่ทราบ"}
+                  </Box>{" "}
+                  โหวตว่า{" "}
+                  <Box component="span" fontWeight="bold">
+                    {nameById[v.targetId] || "ไม่ทราบ"}
+                  </Box>{" "}
+                  เป็น Insider
+                </Typography>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      )}
+
+      {/* ปุ่มไปต่อ */}
       {me && (
-        <Box
-          sx={{
-            mt: 2,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
             คะแนนของคุณตอนนี้:{" "}
             <Box component="span" fontWeight="bold">
@@ -183,11 +163,8 @@ export default function ScoreboardView({
           </Typography>
           <Button
             variant="contained"
-            sx={{
-              bgcolor: "#6366f1",
-              "&:hover": { bgcolor: "#4f46e5" },
-            }}
             onClick={onNextRound}
+            sx={{ borderRadius: 999 }}
           >
             เริ่มรอบถัดไป
           </Button>
