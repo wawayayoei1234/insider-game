@@ -1,19 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import {
-  Box,
-  Button,
-  Container,
-  Grid,
-  Paper,
-  TextField,
-  Typography,
-  Alert,
-  CircularProgress,
-  Chip,
-} from "@mui/material";
-
+import {Box,Button,Container,Grid,Paper,TextField,Typography,Alert,CircularProgress,Chip,} from "@mui/material";
 import LobbyView from "./LobbyView";
 import TimerView from "./TimerView";
 import VotingView from "./VotingView";
@@ -21,7 +9,7 @@ import ScoreboardView from "./ScoreboardView";
 import PlayerTable from "./PlayerTable";
 import ChatPanel from "./ChatPanel";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001/ws";
+const WS_URL =   process.env.NEXT_PUBLIC_WS_URL || "wss://api.insider-game.org/ws";
 
 function formatTime(sec) {
   const m = Math.floor(sec / 60)
