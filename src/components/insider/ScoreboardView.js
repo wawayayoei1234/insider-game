@@ -1,7 +1,7 @@
 // ScoreboardView.js
 "use client";
 
-import { Box, Typography, Table, TableBody, TableRow, TableCell, Button, Paper, List, ListItem } from "@mui/material";
+import { Box, Typography, Table, TableBody, TableRow, TableCell, Button, Paper, List, ListItem, Dialog, DialogTitle, DialogContent } from "@mui/material";
 
 export default function ScoreboardView({
   room,
@@ -23,10 +23,12 @@ export default function ScoreboardView({
   const lastVotes = room.lastVotes || [];
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <Dialog open fullWidth maxWidth="xs" disableEscapeKeyDown>
+      <DialogTitle sx={{ fontWeight: "bold", pb: 0 }}>
         กระดานคะแนน (จบรอบ)
-      </Typography>
+      </DialogTitle>
+      <DialogContent>
+    <Box>
 
       {room.roundEndByTimeout ? (
         <Paper
@@ -171,5 +173,7 @@ export default function ScoreboardView({
         </Box>
       )}
     </Box>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,14 +8,41 @@ import {
   Stack,
   IconButton,
   Tooltip,
+  Avatar,
 } from "@mui/material";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
+import PanToolIcon from "@mui/icons-material/PanTool";
 
-export default function PlayerTable({ players, selfId, room, isHost, onKick }) {
+function nameToColor(str = "") {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return `hsl(${Math.abs(hash) % 360}, 60%, 50%)`;
+}
+
+export default function PlayerTable({ players, selfId, room, isHost, onKick, onVote, voteTarget }) {
   if (!players || players.length === 0) return null;
 
-  const seats = players;
-  const radius = 38; // % จาก center
+  const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
+  const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
+
+  // แบ่งผู้เล่น (ไม่นับกรรมการ) ซ้าย/ขวาเท่าๆ กัน
+  const leftPlayers = nonJudgePlayers.filter((_, i) => i % 2 === 0);
+  const rightPlayers = nonJudgePlayers.filter((_, i) => i % 2 !== 0);
+
+  function getSideTop(index, total) {
+    return ((index + 1) / (total + 1)) * 76 + 12;
+  }
+
+  const isVoting = room?.state === "voting";
+  const votedMap = room?.voted || {};
+  const blockedMap = room?.blockedVoters || {};
+  const iVoted = !!votedMap[selfId];
+  const iAmBlocked = !!blockedMap[selfId];
+  const selfRole = players.find((p) => p.id === selfId)?.role;
+  const isJudgeSelf = selfRole === "judge";
+  const canVote = isVoting && !iAmBlocked && !iVoted && !isJudgeSelf;
 
   return (
     <Paper
@@ -56,26 +83,32 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick }) {
         <Box
           sx={{
             position: "absolute",
-            inset: "10%",
-            borderRadius: "999px",
+            top: "18%",
+            left: "16%",
+            right: "16%",
+            bottom: "18%",
+            borderRadius: 4,
             bgcolor: "#f1f5f9",
             border: "3px solid #cbd5f5",
           }}
         />
 
-        {/* ที่นั่งแต่ละคนวางรอบโต๊ะ */}
-        {seats.map((p, index) => {
-          const angle = (2 * Math.PI * index) / seats.length - Math.PI / 2;
-          const top = 50 + radius * Math.sin(angle);
-          const left = 50 + radius * Math.cos(angle);
-
+        {/* ที่นั่งผู้เล่น */}
+        {[
+          ...(judgePlayer ? [{ p: judgePlayer, top: 8, left: 50 }] : []),
+          ...leftPlayers.map((p, i) => ({ p, top: getSideTop(i, leftPlayers.length), left: 10 })),
+          ...rightPlayers.map((p, i) => ({ p, top: getSideTop(i, rightPlayers.length), left: 90 })),
+        ].map(({ p, top, left }) => {
           const isMe = p.id === selfId;
           const isJudge = p.id === room?.judgeId;
           const isHostSeat = p.id === room?.hostId;
+          const isVotable = canVote && !isMe && !isJudge;
+          const isSelected = voteTarget === p.id;
 
           return (
             <Box
               key={p.id}
+              onClick={() => isVotable && onVote && onVote(p.id)}
               sx={{
                 position: "absolute",
                 top: `${top}%`,
@@ -85,30 +118,62 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick }) {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 0.5,
+                cursor: isVotable ? "pointer" : "default",
+                "&:hover .vote-avatar": isVotable ? { transform: "scale(1.15)" } : {},
               }}
             >
-              {/* เก้าอี้ + ชื่อ */}
-              <Paper
-                elevation={isMe ? 4 : 1}
-                sx={{
-                  px: 1.5,
-                  py: 0.75,
-                  borderRadius: 999,
-                  bgcolor: isMe ? "#e0f2fe" : "white",
-                  border: isMe ? "2px solid #38bdf8" : "1px solid #e5e7eb",
-                  minWidth: 80,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 0.5,
-                }}
-              >
+              {/* Avatar */}
+              <Box sx={{ position: "relative", display: "inline-flex" }}>
+                <Avatar
+                  className="vote-avatar"
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    bgcolor: nameToColor(p.name),
+                    fontSize: "0.9rem",
+                    fontWeight: "bold",
+                    border: isSelected
+                      ? "2px solid #f43f5e"
+                      : isMe
+                      ? "2px solid #38bdf8"
+                      : "2px solid white",
+                    boxShadow: isSelected
+                      ? "0 0 0 3px rgba(244,63,94,0.35)"
+                      : "0 2px 6px rgba(0,0,0,0.18)",
+                    transition: "transform 0.15s",
+                  }}
+                >
+                  {(p.name || "?")[0].toUpperCase()}
+                </Avatar>
+                {isVoting && !votedMap[p.id] && !isJudge && !blockedMap[p.id] && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: -6,
+                      right: -8,
+                      bgcolor: "#fef9c3",
+                      borderRadius: "50%",
+                      width: 16,
+                      height: 16,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    <PanToolIcon sx={{ fontSize: 10, color: "#b45309" }} />
+                  </Box>
+                )}
+              </Box>
+
+              {/* ชื่อ */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
                 <Typography
                   variant="body2"
                   sx={{
                     textAlign: "center",
                     fontWeight: isMe ? "bold" : "normal",
-                    color: isMe ? "#0f172a" : "#111827",
+                    color: isMe ? "#0369a1" : "#111827",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -121,20 +186,13 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick }) {
                     <IconButton
                       size="small"
                       onClick={() => onKick && onKick(p.id)}
-                      sx={{
-                        ml: 0.5,
-                        p: 0.2,
-                        color: "#b91c1c",
-                        "&:hover": {
-                          bgcolor: "#fee2e2",
-                        },
-                      }}
+                      sx={{ p: 0.2, color: "#b91c1c", "&:hover": { bgcolor: "#fee2e2" } }}
                     >
                       <PersonRemoveIcon fontSize="inherit" />
                     </IconButton>
                   </Tooltip>
                 )}
-              </Paper>
+              </Box>
 
               {/* role badge */}
               <Stack direction="row" spacing={0.5}>
