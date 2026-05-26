@@ -332,9 +332,9 @@ export default function InsiderGamePage() {
   };
 
 
-  const handleGuessCorrect = () => {
+  const handleGuessCorrect = (correctGuesserId) => {
     if (!isJudge) return;
-    send({ type: "guess_correct" });
+    send({ type: "guess_correct", ...(correctGuesserId ? { correctGuesserId } : {}) });
   };
 
   const handleVote = (suspectId) => {
@@ -600,7 +600,7 @@ export default function InsiderGamePage() {
           )}
           {currentState === "countdown" && (
             <Box sx={{ p: 2 }}>
-              <TimerView room={room} me={me} isJudge={isJudge} onGuessCorrect={handleGuessCorrect} />
+              <TimerView room={room} me={me} isJudge={isJudge} onGuessCorrect={handleGuessCorrect} players={players} />
             </Box>
           )}
           {currentState === "voting" && (
