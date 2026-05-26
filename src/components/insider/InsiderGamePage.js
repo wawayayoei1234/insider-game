@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, Avatar, IconButton, Tooltip, Paper } from "@mui/material";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import PanToolIcon from "@mui/icons-material/PanTool";
@@ -96,18 +96,56 @@ export default function InsiderGamePage() {
   const [nameInput, setNameInput] = useState("");
 
   const wsRef = useRef(null);
+  const inGameRef = useRef(false);
+  const savedCredsRef = useRef(null);
+  const reconnectCountRef = useRef(0);
+  const reconnectTimerRef = useRef(null);
+  const MAX_RECONNECT = 5;
 
   const [room, setRoom] = useState(null);
   const [selfId, setSelfId] = useState(null);
   const [error, setError] = useState("");
-  const [connecting, setConnecting] = useState(null); 
+  const [connecting, setConnecting] = useState(null);
+  const [reconnecting, setReconnecting] = useState(false);
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
 
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
 
+  // restore session เมื่อ refresh หน้า
+  useEffect(() => {
+    const saved = sessionStorage.getItem("insider_session");
+    if (!saved) return;
+    try {
+      const creds = JSON.parse(saved);
+      setRoomCodeInput(creds.roomCode);
+      setNameInput(creds.name);
+      savedCredsRef.current = creds;
+      setReconnecting(true);
+      reconnectTimerRef.current = setTimeout(() => {
+        connectToRoom("join", creds);
+      }, 500);
+    } catch {
+      sessionStorage.removeItem("insider_session");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearSession = () => {
+    inGameRef.current = false;
+    savedCredsRef.current = null;
+    reconnectCountRef.current = 0;
+    setReconnecting(false);
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    sessionStorage.removeItem("insider_session");
+  };
+
   const handleKicked = (message) => {
+    clearSession();
     setError(message || "คุณถูกเชิญออกจากห้อง");
     setPhase("join");
     setRoom(null);
@@ -119,55 +157,70 @@ export default function InsiderGamePage() {
   };
 
   const handleLeaveRoom = () => {
+    clearSession();
     setError("");
     setRoom(null);
     setSelfId(null);
     setPhase("join");
-
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.close();
     }
     wsRef.current = null;
   };
 
-  const connectToRoom = (mode) => {
+  const connectToRoom = (mode, creds = null) => {
+    const name = creds?.name || nameInput.trim();
+    const roomCode = creds?.roomCode || roomCodeInput.trim();
+
     setError("");
 
-    if (!nameInput.trim()) {
-      setError("กรุณากรอกชื่อผู้เล่น");
-      return;
-    }
-
-    if (!roomCodeInput.trim()) {
-      setError("กรุณากรอกรหัสห้อง");
-      return;
-    }
+    if (!name) { setError("กรุณากรอกชื่อผู้เล่น"); return; }
+    if (!roomCode) { setError("กรุณากรอกรหัสห้อง"); return; }
 
     setConnecting(mode);
 
-    const url =
-      WS_URL +
-      `?room=${encodeURIComponent(
-        roomCodeInput.trim()
-      )}&name=${encodeURIComponent(nameInput.trim())}&mode=${mode}`;
+    const url = WS_URL + `?room=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(name)}&mode=${mode}`;
 
     const socket = new WebSocket(url);
     wsRef.current = socket;
 
     socket.onopen = () => {
       console.log("WS connected");
+      reconnectCountRef.current = 0;
+      setReconnecting(false);
     };
 
     socket.onclose = () => {
       console.log("WS closed");
       wsRef.current = null;
       setConnecting(null);
+
+      if (inGameRef.current && savedCredsRef.current) {
+        const attempt = reconnectCountRef.current;
+        if (attempt >= MAX_RECONNECT) {
+          setReconnecting(false);
+          setError("เชื่อมต่อไม่ได้หลังจากลองซ้ำหลายครั้ง กรุณาเข้าห้องใหม่");
+          clearSession();
+          setPhase("join");
+          setRoom(null);
+          setSelfId(null);
+          return;
+        }
+        reconnectCountRef.current += 1;
+        setReconnecting(true);
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+        reconnectTimerRef.current = setTimeout(() => {
+          connectToRoom("join", savedCredsRef.current);
+        }, delay);
+      }
     };
 
     socket.onerror = (e) => {
       console.error("WS error", e);
-      setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
-      setConnecting(null);
+      if (!inGameRef.current) {
+        setError("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+        setConnecting(null);
+      }
     };
 
 
@@ -189,15 +242,18 @@ export default function InsiderGamePage() {
           }
 
           if (mode === "join" && text.includes("room not found")) {
-            setError("ไม่พบห้องนี้ อาจพิมพ์รหัสผิด หรือห้องถูกลบแล้ว");
+            if (inGameRef.current) {
+              // server crash — ห้องหายไป หยุด reconnect
+              clearSession();
+              setError("ห้องหายไปแล้ว (server อาจ restart) กรุณาสร้างห้องใหม่");
+            } else {
+              setError("ไม่พบห้องนี้ อาจพิมพ์รหัสผิด หรือห้องถูกลบแล้ว");
+            }
             setPhase("join");
             setRoom(null);
             setSelfId(null);
             setConnecting(null);
-            if (
-              wsRef.current &&
-              wsRef.current.readyState === WebSocket.OPEN
-            ) {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
               wsRef.current.close();
             }
             wsRef.current = null;
@@ -221,6 +277,10 @@ export default function InsiderGamePage() {
           setRoom(msg.room || null);
           if (msg.selfId) {
             setSelfId(msg.selfId);
+            // บันทึก session สำหรับ reconnect
+            inGameRef.current = true;
+            savedCredsRef.current = { roomCode, name };
+            sessionStorage.setItem("insider_session", JSON.stringify({ roomCode, name }));
           }
  
           setPhase("game");
@@ -468,6 +528,16 @@ export default function InsiderGamePage() {
 
   return (
     <Box sx={{ minHeight: "100vh", background: "linear-gradient(170deg, #1b3a6b 0%, #0c1f3f 100%)", display: "flex", flexDirection: "column" }}>
+
+      {/* Reconnecting banner */}
+      {reconnecting && (
+        <Box sx={{ bgcolor: "#b45309", px: 2, py: 0.6, display: "flex", alignItems: "center", gap: 1 }}>
+          <CircularProgress size={14} sx={{ color: "white" }} />
+          <Typography variant="caption" sx={{ color: "white", fontWeight: 600 }}>
+            กำลังเชื่อมต่อใหม่... (ครั้งที่ {reconnectCountRef.current}/{MAX_RECONNECT})
+          </Typography>
+        </Box>
+      )}
 
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1.2, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
