@@ -113,6 +113,13 @@ export default function InsiderGamePage() {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
 
+  // reset voteTarget เมื่อเข้า voting phase ใหม่
+  useEffect(() => {
+    if (room?.state === "voting") {
+      setVoteTarget(null);
+    }
+  }, [room?.state]);
+
   // restore session เมื่อ refresh หน้า
   useEffect(() => {
     const saved = sessionStorage.getItem("insider_session");
@@ -512,6 +519,12 @@ export default function InsiderGamePage() {
   const iAmBlocked = !!blockedMap[selfId];
   const canVote = isVoting && !iAmBlocked && !iVoted && me?.role !== "judge";
 
+  // deadlock: ทุกคน (ไม่นับ judge) อยู่ใน blockedVoters → ไม่มีใครโหวตได้
+  const eligibleVoters = players.filter(
+    (p) => p.id !== room?.judgeId && !blockedMap[p.id]
+  );
+  const isVoteDeadlock = isVoting && eligibleVoters.length === 0;
+
   const half = Math.ceil(players.length / 2);
   const leftPlayers = players.slice(0, half);
   const rightPlayers = players.slice(half);
@@ -592,6 +605,16 @@ export default function InsiderGamePage() {
           )}
           {currentState === "voting" && (
             <Box sx={{ p: 2 }}>
+              {isVoteDeadlock && (
+                <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)" }}>
+                  <Typography variant="body2" sx={{ color: "#fca5a5", fontWeight: 600 }}>
+                    ⚠️ ทุกคนได้คะแนนเท่ากัน ไม่มีใครโหวตได้
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "rgba(252,165,165,0.8)" }}>
+                    รอ server ตัดสิน หรือให้ Host เริ่มรอบใหม่
+                  </Typography>
+                </Box>
+              )}
               <VotingView room={room} players={players} me={me} />
             </Box>
           )}

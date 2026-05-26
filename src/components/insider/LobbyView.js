@@ -55,21 +55,34 @@ export default function LobbyView({
 
         {isHost && (
           <Box sx={{ mb: 2 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>กรรมการ</InputLabel>
-              <Select
-                label="กรรมการ"
-                value={room.judgeId || ""}
-                onChange={(e) => onSetJudge(e.target.value)}
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <FormControl size="small" sx={{ flex: 1 }}>
+                <InputLabel>กรรมการ</InputLabel>
+                <Select
+                  label="กรรมการ"
+                  value={room.judgeId || ""}
+                  onChange={(e) => onSetJudge(e.target.value)}
+                >
+                  <MenuItem value="">-- เลือกกรรมการ --</MenuItem>
+                  {players.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const pick = players[Math.floor(Math.random() * players.length)];
+                  onSetJudge(pick.id);
+                }}
+                sx={{ whiteSpace: "nowrap", borderRadius: 2 }}
               >
-                <MenuItem value="">-- เลือกกรรมการ --</MenuItem>
-                {players.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>
-                    {p.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                🎲 สุ่ม
+              </Button>
+            </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
               * Host สามารถเปลี่ยนกรรมการได้ก่อนเริ่มเกม
             </Typography>
