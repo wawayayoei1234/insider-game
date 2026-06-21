@@ -30,18 +30,6 @@ function getChibiSrc(name = "") {
 export default function PlayerTable({ players, selfId, room, isHost, onKick, onVote, voteTarget }) {
   if (!players || players.length === 0) return null;
 
-  const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
-  const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
-
-  // แบ่งผู้เล่นครึ่งซ้ายขวาอย่างสมดุลรอบโต๊ะ
-  const leftPlayers = nonJudgePlayers.filter((_, i) => i % 2 === 0);
-  const rightPlayers = nonJudgePlayers.filter((_, i) => i % 2 !== 0);
-
-  function getSideTop(index, total) {
-    if (total <= 1) return 50;
-    return ((index) / (total - 1)) * 60 + 20; // 20% ถึง 80%
-  }
-
   const isVoting = room?.state === "voting";
   const votedMap = room?.voted || {};
   const blockedMap = room?.blockedVoters || {};
@@ -51,11 +39,33 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
   const isJudgeSelf = selfRole === "judge";
   const canVote = isVoting && !iAmBlocked && !iVoted && !isJudgeSelf;
 
-  const seats = [
-    ...(judgePlayer ? [{ p: judgePlayer, top: 12, left: 50, isJudgeSeat: true }] : []),
-    ...leftPlayers.map((p, i) => ({ p, top: getSideTop(i, leftPlayers.length), left: 16 })),
-    ...rightPlayers.map((p, i) => ({ p, top: getSideTop(i, rightPlayers.length), left: 84 })),
-  ];
+  const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
+  const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
+
+  const seats = [];
+  if (judgePlayer) {
+    seats.push({ p: judgePlayer, top: 12, left: 50, isJudgeSeat: true });
+  }
+
+  const centerX = 50;
+  const centerY = 52;
+  const rx = 36; // horizontal radius of the ellipse
+  const ry = 30; // vertical radius of the ellipse
+  const n = nonJudgePlayers.length;
+
+  nonJudgePlayers.forEach((p, index) => {
+    let angle;
+    if (n === 1) {
+      angle = Math.PI / 2; // Directly opposite to the Judge at the bottom
+    } else {
+      // Distribute evenly around the circle, leaving the top (-90 deg) free for the Judge
+      const step = (Math.PI * 2) / (n + 1);
+      angle = -Math.PI / 2 + step * (index + 1);
+    }
+    const x = centerX + rx * Math.cos(angle);
+    const y = centerY + ry * Math.sin(angle);
+    seats.push({ p, top: y, left: x });
+  });
 
   return (
     <Paper

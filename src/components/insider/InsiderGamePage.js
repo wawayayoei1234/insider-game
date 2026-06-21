@@ -641,7 +641,7 @@ export default function InsiderGamePage() {
           <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.5rem", lineHeight: 1.1 }}>
             ⏱️ {formatTime(room.timer ?? 0)}
           </Typography>
-          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem" }}>
+          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem", whiteSpace: "nowrap" }}>
             {currentState === "countdown" && "เฟสทายคำ"}
             {currentState === "voting" && "เฟสโหวตฆาตกร"}
             {currentState === "lobby" && "รอจัดเตรียมรอบ"}
