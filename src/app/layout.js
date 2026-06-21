@@ -4,6 +4,10 @@ export const metadata = {
   title: "Insider Party 🕵️‍♂️ - เล่นเกมทายคำออนไลน์ฟรีกับเพื่อน",
   description: "เกมทายคำออนไลน์สุดกวนและสนุกสนาน ร่วมมือกันตามหาตัวอินไซเดอร์ท่ามกลางพวกเรา! เล่นฟรีได้ทันทีบนมือถือและพีซี",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/game_logo.png",
+    apple: "/game_logo.png",
+  },
   keywords: [
     "insider game",
     "เกมอินไซเดอร์",

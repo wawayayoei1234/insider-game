@@ -398,10 +398,22 @@ export default function InsiderGamePage() {
               alignItems: "center",
             }}
           >
-            {/* สปายสาวนักสืบ Chibi Emoji เกร๋ ๆ */}
-            <Box sx={{ width: 70, height: 70, mb: 1.5, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#ffeef2", border: "3.5px solid #4a3e3d", borderRadius: "50%", boxShadow: "0 4px 0 #4a3e3d", fontSize: "2.5rem" }}>
-              🕵️‍♀️
-            </Box>
+            {/* โลโก้อภิมหาคิ้วท์ประจำเกม */}
+            <Box
+              component="img"
+              src="/game_logo.png"
+              alt="Insider Party Logo"
+              sx={{
+                width: 80,
+                height: 80,
+                mb: 1.5,
+                borderRadius: "50%",
+                border: "3.5px solid #4a3e3d",
+                boxShadow: "0 4px 0 #4a3e3d",
+                objectFit: "cover",
+                bgcolor: "white",
+              }}
+            />
 
 
             <Typography variant="h4" align="center" fontWeight="900" sx={{ color: "#4a3e3d", mb: 1, letterSpacing: "-0.01em" }}>
