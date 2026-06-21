@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper, Divider } from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper, Divider, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import LobbyView from "./LobbyView";
 import TimerView from "./TimerView";
 import VotingView from "./VotingView";
