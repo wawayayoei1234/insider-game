@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper } from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper, Divider } from "@mui/material";
 import LobbyView from "./LobbyView";
 import TimerView from "./TimerView";
 import VotingView from "./VotingView";
@@ -21,6 +21,7 @@ export default function InsiderGamePage() {
   const [phase, setPhase] = useState("join");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [nameInput, setNameInput] = useState("");
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const wsRef = useRef(null);
   const inGameRef = useRef(false);
@@ -529,9 +530,29 @@ export default function InsiderGamePage() {
                 variant="text"
                 onClick={() => connectToRoom("spectate")}
                 disabled={connecting !== null}
-                sx={{ color: "#7a6e6d", fontWeight: "800", fontSize: "0.82rem", py: 1 }}
+                sx={{ color: "#7a6e6d", fontWeight: "800", fontSize: "0.82rem", py: 0.5 }}
               >
                 👀 ขอเป็นเพียงผู้ชม (Spectate)
+              </Button>
+
+              <Divider sx={{ my: 0.5, borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setRulesOpen(true)}
+                sx={{
+                  color: "#ff7b90",
+                  borderColor: "#ff7b90",
+                  borderWidth: "2px",
+                  borderRadius: "14px",
+                  fontWeight: "900",
+                  fontSize: "0.82rem",
+                  py: 0.8,
+                  "&:hover": { borderWidth: "2px", borderColor: "#ff4b6b", bgcolor: "#fff0f3" }
+                }}
+              >
+                📖 วิธีการเล่นเกม (How to Play)
               </Button>
             </Box>
           </Paper>
@@ -591,11 +612,29 @@ export default function InsiderGamePage() {
 
       {/* Header สไตล์ Visual Novel */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "20px", px: 2.5, py: 1.2, mb: 2, boxShadow: "0 4px 0 #4a3e3d" }}>
-        <Box>
-          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>รหัสห้องสืบ</Typography>
-          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
-            {room.code || roomCodeInput}
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>รหัสห้องสืบ</Typography>
+            <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
+              {room.code || roomCodeInput}
+            </Typography>
+          </Box>
+          <Tooltip title="วิธีเล่นเกม">
+            <IconButton
+              size="small"
+              onClick={() => setRulesOpen(true)}
+              sx={{
+                bgcolor: "#fff0f3",
+                color: "#ff9aa2",
+                border: "2px solid #4a3e3d",
+                boxShadow: "0 2px 0 #4a3e3d",
+                p: 0.6,
+                "&:hover": { bgcolor: "#ffe0e5" }
+              }}
+            >
+              📖
+            </IconButton>
+          </Tooltip>
         </Box>
 
         <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: 3, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d" }}>
@@ -662,7 +701,16 @@ export default function InsiderGamePage() {
           {reactions.length > 0 && (
             <Box sx={{ position: "fixed", bottom: 120, left: 0, right: 0, zIndex: 1250, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
               {reactions.map((r) => (
-                <Box key={r.id} sx={{ display: "flex", alignItems: "center", gap: 0.5, className: "anime-float", animation: "floatUp 2s ease-out forwards" }}>
+                <Box
+                  key={r.id}
+                  className="anime-float"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    animation: "floatUp 2s ease-out forwards"
+                  }}
+                >
                   <Typography sx={{ fontSize: "1.8rem" }}>{r.emoji}</Typography>
                   {r.name && <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold", bgcolor: "white", px: 0.8, py: 0.1, border: "1.5px solid #4a3e3d", borderRadius: "8px" }}>{r.name}</Typography>}
                 </Box>
@@ -729,6 +777,92 @@ export default function InsiderGamePage() {
           </Button>
         </Box>
       </Box>
+
+      {/* Dialog วิธีการเล่นเกม */}
+      <Dialog
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            borderRadius: "24px",
+            border: "3px solid #4a3e3d",
+            boxShadow: "0 8px 0 #4a3e3d",
+            backgroundColor: "#fffdfb"
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: "900", color: "#4a3e3d", pb: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6" fontWeight="900" sx={{ color: "#4a3e3d" }}>
+            📖 วิธีการเล่นเกม Insider Party!
+          </Typography>
+          <IconButton size="small" onClick={() => setRulesOpen(false)} sx={{ color: "#4a3e3d" }}>✕</IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pb: 3 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+            <Typography variant="body2" sx={{ color: "#7a6e6d", fontWeight: "bold" }}>
+              เกมปาร์ตี้ทายคำแนวจับโกหก! ฝ่ายนักสืบและกรรมการจะต้องร่วมมือกันทายคำศัพท์ปริศนา ในขณะที่มี "สายลับอินไซเดอร์" แอบรู้คำเฉลยและกำลังชักใยการเดาอยู่เบื้องหลังโดยไม่ให้ใครจับได้
+            </Typography>
+
+            <Divider sx={{ borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
+
+            <Typography variant="subtitle2" fontWeight="900" sx={{ color: "#4a3e3d", mb: -1 }}>👥 บทบาทในแต่ละรอบ</Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <Box sx={{ p: 1.5, bgcolor: "#eff6ff", borderRadius: "14px", border: "2px solid #4a3e3d" }}>
+                <Typography variant="body2" fontWeight="900" sx={{ color: "#1d4ed8", mb: 0.5 }}>⚖️ กรรมการ (Judge)</Typography>
+                <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold", display: "block" }}>
+                  มีหน้าที่ป้อนคำปริศนา (หรือใช้สุ่ม) คอยตอบคำถามและให้คำใบ้แก่ผู้เล่น และกดยืนยันเมื่อมีผู้เล่นเดาคำปริศนาได้ถูกต้อง
+                </Typography>
+              </Box>
+              <Box sx={{ p: 1.5, bgcolor: "#fff5f5", borderRadius: "14px", border: "2px solid #4a3e3d" }}>
+                <Typography variant="body2" fontWeight="900" sx={{ color: "#ff4b5c", mb: 0.5 }}>🦊 อินไซเดอร์ (Insider)</Typography>
+                <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold", display: "block" }}>
+                  **รู้คำปริศนาตั้งแต่เริ่ม!** ต้องแอบชี้นำหรือง้างคำตอบให้ Commons ทายถูกก่อนเวลาหมด โดยห้ามให้คนอื่นจับได้ว่าตนคือผู้อยู่เบื้องหลัง
+                </Typography>
+              </Box>
+              <Box sx={{ p: 1.5, bgcolor: "#f0fdf4", borderRadius: "14px", border: "2px solid #4a3e3d" }}>
+                <Typography variant="body2" fontWeight="900" sx={{ color: "#0f766e", mb: 0.5 }}>🔍 ผู้เล่นทั่วไป (Commons)</Typography>
+                <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold", display: "block" }}>
+                  **ไม่รู้คำปริศนา!** ต้องถามคำถามเพื่อเดาคำให้ถูก และคอยจับสังเกตว่าผู้เล่นคนใดแอบรู้คำศัพท์ล่วงหน้าหรือพยายามชักจูงคำตอบ
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider sx={{ borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
+
+            <Typography variant="subtitle2" fontWeight="900" sx={{ color: "#4a3e3d", mb: -1 }}>🏁 ขั้นตอนและกติกาเกม</Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Typography variant="body2" fontWeight="bold" sx={{ color: "#4a3e3d" }}>
+                1. เฟสทายคำ:
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", pl: 1, display: "block" }}>
+                • ช่วยกันพิมพ์แชทสืบหาคำปริศนาจากกรรมการ (เช่น "เป็นของกินใช่ไหม?", "ใช้ในบ้านรึเปล่า?")
+                <br />• ต้องเดาให้ถูกก่อนหมดเวลา ไม่เช่นนั้นจะแพ้ทั้งหมด (ไม่มีใครได้รับคะแนน)
+              </Typography>
+
+              <Typography variant="body2" fontWeight="bold" sx={{ color: "#4a3e3d", mt: 1 }}>
+                2. เฟสโหวตจับโปหก:
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", pl: 1, display: "block" }}>
+                • หลังทายถูก ทุกคนจะร่วมกันพูดคุยและกดโหวตผู้ต้องสงสัยบน **"โต๊ะประชุมหลัก"**
+                <br />• หากโหวตจับ Insider ได้ถูกต้อง ฝ่าย Commons จะชนะ
+                <br />• **หากโหวตจับผิดคน หรือผลโหวตเสมอกัน** ถือว่าโหวตล้มเหลว ฝ่าย Insider จะเป็นผู้ชนะ
+              </Typography>
+            </Box>
+
+            <Divider sx={{ borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
+
+            <Typography variant="subtitle2" fontWeight="900" sx={{ color: "#4a3e3d", mb: -1 }}>🏆 เกณฑ์คะแนนที่ได้รับ</Typography>
+            <Box sx={{ p: 1.5, bgcolor: "#fffdf5", borderRadius: "14px", border: "2px solid #4a3e3d" }}>
+              <Typography variant="caption" sx={{ color: "#854d0e", fontWeight: "bold", display: "block" }}>
+                • **หากจับกุม Insider สำเร็จ**: ผู้เล่นทั่วไป (Commons) ได้คนละ **+1 คะแนน** (ยกเว้นกรรมการ และคนทายคำปริศนาถูก)
+                <br />• **หาก Insider รอดการจับกุม (หรือโหวตเสมอ)**: อินไซเดอร์ ได้ **+2 คะแนน** และคนทายคำถูก ได้ **+1 คะแนน**
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+      </Dialog>
 
     </Box>
   );

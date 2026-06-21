@@ -26,7 +26,7 @@ export default function LobbyView({
   const canStart =
     // !!room.judgeId &&   // Wait! In lobby, the host chooses a judge first. Let's make sure it's valid.
     !!room.judgeId &&
-    nonJudgeCount >= 3 &&
+    nonJudgeCount >= 1 &&
     (useRandom || secretWord.trim() !== "");
 
   const handleStart = () => {
@@ -94,7 +94,7 @@ export default function LobbyView({
               variant="contained"
               size="small"
               onClick={() => {
-                const activeOnes = players.filter(p => !p.spectator && p.connected);
+                const activeOnes = players.filter(p => !p.spectator && p.connected !== false);
                 if (activeOnes.length > 0) {
                   const pick = activeOnes[Math.floor(Math.random() * activeOnes.length)];
                   onSetJudge(pick.id);
@@ -225,7 +225,7 @@ export default function LobbyView({
           </Button>
 
           <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "600", mt: 0.5 }}>
-            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + มีผู้เล่นฝ่าย Commons ≥ 3 คน และกรอกคำใบ้แล้ว
+            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + ผู้เล่นอื่นอย่างน้อย 1 คน และกรอกคำใบ้แล้ว (แนะนำ 4 คนขึ้นไปเพื่อความสนุก)
           </Typography>
         </Box>
       ) : (

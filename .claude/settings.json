@@ -91,7 +91,8 @@
       "Bash(go build *)",
       "Bash(echo \"BUILD EXIT: $?\")",
       "Bash(go vet *)",
-      "Bash(echo \"VET EXIT: $?\")"
+      "Bash(echo \"VET EXIT: $?\")",
+      "WebFetch(domain:insider-game.org)"
     ],
     "additionalDirectories": [
       "C:\\Users\\kwan5\\.openclaw\\agents\\main\\sessions",

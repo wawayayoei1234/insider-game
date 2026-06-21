@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Box, Typography, Table, TableBody, TableRow, TableCell, Button, Paper, List, ListItem, Dialog, DialogContent, DialogActions, DialogTitle, Divider } from "@mui/material";
+import { Box, Typography, Table, TableBody, TableRow, TableCell, Button, Paper, List, ListItem, Dialog, DialogContent, DialogActions, DialogTitle, Divider, Chip } from "@mui/material";
 
 export default function ScoreboardView({ room, players, insiderId, me, onNextRound }) {
   const sorted = [...players].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
@@ -243,6 +243,15 @@ export default function ScoreboardView({ room, players, insiderId, me, onNextRou
                 </List>
               </Box>
             )}
+
+            {/* เกณฑ์การให้คะแนน */}
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: "14px", bgcolor: "#fffdf5", border: "2px solid #4a3e3d" }}>
+              <Typography variant="caption" fontWeight="bold" sx={{ color: "#854d0e", display: "block" }}>
+                💡 <b>คำอธิบายการคิดคะแนนและผลโหวต:</b>
+                <br />• หาก Commons ชนะ (โหวตจับกุม Insider สำเร็จ) ➡️ Commons ทุกคนได้ **+1 แต้ม** (ยกเว้นกรรมการและคนทายคำปริศนาถูก)
+                <br />• หาก Insider ชนะ (รอดการจับกุม หรือผลโหวตเสมอกัน) ➡️ Insider ได้ **+2 แต้ม** และคนเดาคำถูกได้ **+1 แต้ม**
+              </Typography>
+            </Paper>
 
             {/* ปุ่มเพื่อไปต่อรอบใหม่ */}
             {me && (
