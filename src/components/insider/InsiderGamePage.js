@@ -1,91 +1,18 @@
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, Avatar, IconButton, Tooltip, Paper } from "@mui/material";
-import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
-import PanToolIcon from "@mui/icons-material/PanTool";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper } from "@mui/material";
 import LobbyView from "./LobbyView";
 import TimerView from "./TimerView";
 import VotingView from "./VotingView";
 import ScoreboardView from "./ScoreboardView";
 import ChatPanel from "./ChatPanel";
+import PlayerTable from "./PlayerTable";
 
-function nameToColor(str = "") {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return `hsl(${Math.abs(hash) % 360}, 55%, 42%)`;
-}
-
-function PlayerCard({ player, number, selfId, room, isHost, onKick, onVote, voteTarget, canVote, isVoting, votedMap, blockedMap }) {
-  const isMe = player.id === selfId;
-  const isJudge = player.id === room?.judgeId;
-  const isHostSeat = player.id === room?.hostId;
-  const isVotable = canVote && !isMe && !isJudge;
-  const isSelected = voteTarget === player.id;
-  const hasVoted = !!votedMap[player.id];
-  const isBlocked = !!blockedMap[player.id];
-  const showHandIcon = isVoting && !hasVoted && !isJudge && !isBlocked;
-
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: isVotable ? "pointer" : "default", "&:hover .pcard-avatar": isVotable ? { transform: "scale(1.08)" } : {} }}
-      onClick={() => isVotable && onVote && onVote(player.id)}>
-
-      <Box sx={{ position: "relative" }}>
-        {/* Number badge */}
-        <Box sx={{ position: "absolute", top: -3, left: -5, zIndex: 2, minWidth: 18, height: 18, borderRadius: 999, bgcolor: "#f97316", display: "flex", alignItems: "center", justifyContent: "center", px: 0.4, border: "1.5px solid #0c1f3f" }}>
-          <Typography sx={{ color: "white", fontSize: "0.6rem", fontWeight: "bold", lineHeight: 1 }}>{number}</Typography>
-        </Box>
-
-        {/* Avatar */}
-        <Avatar className="pcard-avatar" sx={{ width: 54, height: 54, bgcolor: nameToColor(player.name), fontSize: "1.2rem", fontWeight: "bold", border: isSelected ? "2.5px solid #f43f5e" : isMe ? "2.5px solid #38bdf8" : "2px solid rgba(255,255,255,0.15)", boxShadow: isSelected ? "0 0 0 3px rgba(244,63,94,0.35)" : "none", transition: "transform 0.15s" }}>
-          {(player.name || "?")[0].toUpperCase()}
-        </Avatar>
-
-        {/* Hand icon overlay */}
-        {showHandIcon && (
-          <Box sx={{ position: "absolute", inset: 0, borderRadius: "50%", bgcolor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <PanToolIcon sx={{ color: "white", fontSize: 24 }} />
-          </Box>
-        )}
-      </Box>
-
-      {/* Name */}
-      <Typography sx={{ color: isMe ? "#7dd3fc" : "rgba(255,255,255,0.85)", fontSize: "0.68rem", fontWeight: isMe ? 700 : 400, mt: 0.4, maxWidth: 76, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
-        {player.name}
-      </Typography>
-
-      {/* Badges */}
-      <Box sx={{ display: "flex", gap: 0.3, flexWrap: "wrap", justifyContent: "center", minHeight: 18 }}>
-        {isJudge && <Chip label="JUDGE" size="small" sx={{ bgcolor: "#1d4ed8", color: "white", fontSize: "0.55rem", height: 16, "& .MuiChip-label": { px: 0.6 } }} />}
-        {isHostSeat && <Chip label="HOST" size="small" sx={{ bgcolor: "#92400e", color: "white", fontSize: "0.55rem", height: 16, "& .MuiChip-label": { px: 0.6 } }} />}
-      </Box>
-
-      {/* Vote button */}
-      {isVoting && !isJudge && (
-        <Button size="small" onClick={(e) => { e.stopPropagation(); isVotable && onVote && onVote(player.id); }} disabled={!canVote}
-          sx={{ mt: 0.3, bgcolor: isSelected ? "#dc2626" : "#f97316", color: "white", borderRadius: 999, minWidth: 54, fontSize: "0.65rem", py: 0.25, px: 1, textTransform: "none", fontWeight: 600, "&:hover": { bgcolor: isSelected ? "#b91c1c" : "#ea580c" }, "&.Mui-disabled": { bgcolor: "rgba(249,115,22,0.3)", color: "rgba(255,255,255,0.5)" } }}>
-          โหวต
-        </Button>
-      )}
-
-      {/* Kick button */}
-      {isHost && !isMe && (
-        <Tooltip title="เตะออกจากห้อง">
-          <IconButton size="small" onClick={(e) => { e.stopPropagation(); onKick && onKick(player.id); }} sx={{ mt: 0.2, p: 0.2, color: "#f87171", "&:hover": { bgcolor: "rgba(248,113,113,0.12)" } }}>
-            <PersonRemoveIcon sx={{ fontSize: 13 }} />
-          </IconButton>
-        </Tooltip>
-      )}
-    </Box>
-  );
-}
-
-const WS_URL =   process.env.NEXT_PUBLIC_WS_URL || "wss://api.insider-game.org/ws";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "wss://api.insider-game.org/ws";
+const MAX_RECONNECT = 5;
 
 function formatTime(sec) {
-  const m = Math.floor(sec / 60)
-    .toString()
-    .padStart(2, "0");
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
   const s = (sec % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
@@ -100,7 +27,6 @@ export default function InsiderGamePage() {
   const savedCredsRef = useRef(null);
   const reconnectCountRef = useRef(0);
   const reconnectTimerRef = useRef(null);
-  const MAX_RECONNECT = 5;
 
   const [room, setRoom] = useState(null);
   const [selfId, setSelfId] = useState(null);
@@ -112,17 +38,67 @@ export default function InsiderGamePage() {
 
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
+  const [notice, setNotice] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [reactions, setReactions] = useState([]);
+  const [soundOn, setSoundOn] = useState(true);
+  const audioCtxRef = useRef(null);
+  const prevStateRef = useRef(null);
 
-  // reset voteTarget เมื่อเข้า voting phase ใหม่
   useEffect(() => {
     if (room?.state === "voting") {
       setVoteTarget(null);
     }
   }, [room?.state]);
 
-  // restore session เมื่อ refresh หน้า
   useEffect(() => {
-    const saved = sessionStorage.getItem("insider_session");
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(""), 6000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const playBeep = (freq = 440, dur = 0.15, type = "sine", vol = 0.18) => {
+    if (!soundOn) return;
+    try {
+      if (!audioCtxRef.current) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtxRef.current = new AC();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      o.connect(g);
+      g.connect(ctx.destination);
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.start(t0);
+      o.stop(t0 + dur);
+    } catch {}
+  };
+
+  useEffect(() => {
+    const s = room?.state;
+    if (!s || prevStateRef.current === s) return;
+    prevStateRef.current = s;
+    if (s === "countdown") playBeep(660, 0.18, "sine");
+    else if (s === "voting") playBeep(520, 0.22, "triangle");
+    else if (s === "scoreboard") playBeep(400, 0.32, "sawtooth");
+  }, [room?.state]);
+
+  useEffect(() => {
+    const s = room?.state;
+    if (s !== "countdown" && s !== "voting") return;
+    const t = room?.timer ?? 0;
+    if (t > 0 && t <= 10) playBeep(900, 0.07, "square", 0.12);
+  }, [room?.timer]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("insider_session");
     if (!saved) return;
     try {
       const creds = JSON.parse(saved);
@@ -134,9 +110,8 @@ export default function InsiderGamePage() {
         connectToRoom("join", creds);
       }, 500);
     } catch {
-      sessionStorage.removeItem("insider_session");
+      localStorage.removeItem("insider_session");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const clearSession = () => {
@@ -148,7 +123,7 @@ export default function InsiderGamePage() {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
-    sessionStorage.removeItem("insider_session");
+    localStorage.removeItem("insider_session");
   };
 
   const handleKicked = (message) => {
@@ -186,7 +161,16 @@ export default function InsiderGamePage() {
 
     setConnecting(mode);
 
-    const url = WS_URL + `?room=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(name)}&mode=${mode}`;
+    let token = creds?.token || "";
+    if (!token && mode === "join") {
+      try {
+        const s = JSON.parse(localStorage.getItem("insider_session") || "{}");
+        if (s.roomCode === roomCode) token = s.token || "";
+      } catch {}
+    }
+
+    let url = WS_URL + `?room=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(name)}&mode=${mode}`;
+    if (token) url += `&token=${encodeURIComponent(token)}`;
 
     const socket = new WebSocket(url);
     wsRef.current = socket;
@@ -230,27 +214,23 @@ export default function InsiderGamePage() {
       }
     };
 
-
     socket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
 
         if (msg.type === "error") {
           const text = msg.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์";
-          
-        if (mode === "create" && text.includes("ห้องนี้มีอยู่แล้ว")) {
-          setError(text);
-          setConnecting(null);
-          return;
-        }
+          if (mode === "create" && text.includes("ห้องนี้มีอยู่แล้ว")) {
+            setError(text);
+            setConnecting(null);
+            return;
+          }
           if (text.includes("ถูกเชิญออกจากห้องโดย Host")) {
             handleKicked(text);
             return;
           }
-
           if (mode === "join" && text.includes("room not found")) {
             if (inGameRef.current) {
-              // server crash — ห้องหายไป หยุด reconnect
               clearSession();
               setError("ห้องหายไปแล้ว (server อาจ restart) กรุณาสร้างห้องใหม่");
             } else {
@@ -266,30 +246,43 @@ export default function InsiderGamePage() {
             wsRef.current = null;
             return;
           }
-
- 
           setError(text);
           setConnecting(null);
           return;
         }
 
-  
         if (msg.type === "chat") {
           setMessages((prev) => [...prev, msg]);
           return;
         }
 
-   
+        if (msg.type === "notice") {
+          setNotice(msg.message || "");
+          return;
+        }
+
+        if (msg.type === "reaction") {
+          const rid = `${msg.ts || Date.now()}-${Math.random().toString(36).slice(2)}`;
+          setReactions((prev) => [...prev, { id: rid, emoji: msg.emoji, name: msg.from?.name }]);
+          setTimeout(() => {
+            setReactions((prev) => prev.filter((r) => r.id !== rid));
+          }, 3000);
+          return;
+        }
+
         if (msg.type === "room") {
           setRoom(msg.room || null);
+          if (Array.isArray(msg.categories) && msg.categories.length) {
+            setCategories(msg.categories);
+          }
           if (msg.selfId) {
             setSelfId(msg.selfId);
-            // บันทึก session สำหรับ reconnect
             inGameRef.current = true;
-            savedCredsRef.current = { roomCode, name };
-            sessionStorage.setItem("insider_session", JSON.stringify({ roomCode, name }));
+            const newToken = msg.token || savedCredsRef.current?.token || token;
+            const sess = { roomCode, name, token: newToken };
+            savedCredsRef.current = sess;
+            localStorage.setItem("insider_session", JSON.stringify(sess));
           }
- 
           setPhase("game");
           setConnecting(null);
         }
@@ -327,10 +320,24 @@ export default function InsiderGamePage() {
     setSecretWord("");
   };
 
-  const handleStartRound = () => {
-    send({ type: "start_round", secretWord });
+  const handleStartRound = (opts = {}) => {
+    send({ type: "start_round", secretWord, random: !!opts.random, category: opts.category || "" });
   };
 
+  const handleAddHint = (text) => {
+    const t = (text || "").trim();
+    if (!t) return;
+    send({ type: "add_hint", text: t });
+  };
+
+  const handleAskQuestion = () => {
+    send({ type: "ask_question" });
+  };
+
+  const handleReact = (emoji) => {
+    if (!emoji) return;
+    send({ type: "react", emoji });
+  };
 
   const handleGuessCorrect = (correctGuesserId) => {
     if (!isJudge) return;
@@ -356,133 +363,163 @@ export default function InsiderGamePage() {
     send({ type: "chat", text });
     setChatInput("");
   };
+  
   const handleToggleChat = (enabled) => {
     send({ type: "set_chat_enabled", chatEnabled: enabled });
   };
-  
+
+  // ---------- PHASE: JOIN ROOM (ออกแบบใหม่แบบ Anime คิ้วท์ ๆ) ----------
   if (phase === "join") {
     return (
       <Box
         sx={{
           minHeight: "100vh",
-          background:
-            "radial-gradient(circle at 15% 10%, rgba(56,189,248,0.24), transparent 38%), radial-gradient(circle at 85% 85%, rgba(251,113,133,0.2), transparent 34%), linear-gradient(135deg, #f8fafc, #eef2ff 45%, #fdf2f8)",
+          background: "url('/detective_bg.png') no-repeat center center fixed",
+          backgroundSize: "cover",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           px: 2,
         }}
       >
-        <Container maxWidth="sm">
+        <Container maxWidth="xs">
           <Paper
             elevation={0}
+            className="anime-bob"
             sx={{
-              p: { xs: 3, sm: 4 },
-              borderRadius: 5,
-              bgcolor: "rgba(255,255,255,0.88)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid rgba(99,102,241,0.14)",
-              boxShadow: "0 24px 55px rgba(15,23,42,0.14)",
+              p: 4,
+              borderRadius: "28px",
+              bgcolor: "rgba(255, 255, 255, 0.72)",
+              backdropFilter: "blur(12px)",
+              border: "4px solid #4a3e3d",
+              boxShadow: "0 10px 0 #4a3e3d",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
-            <Typography
-              variant="h4"
-              align="center"
-              fontWeight="bold"
-              sx={{
-                mb: 1.2,
-                background:
-                  "linear-gradient(120deg, #2563eb, #7c3aed 45%, #f43f5e)",
-                WebkitBackgroundClip: "text",
-                color: "transparent",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Insider Party
+            {/* สปายสาวนักสืบ Chibi Emoji เกร๋ ๆ */}
+            <Box sx={{ width: 70, height: 70, mb: 1.5, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#ffeef2", border: "3.5px solid #4a3e3d", borderRadius: "50%", boxShadow: "0 4px 0 #4a3e3d", fontSize: "2.5rem" }}>
+              🕵️‍♀️
+            </Box>
+
+
+            <Typography variant="h4" align="center" fontWeight="900" sx={{ color: "#4a3e3d", mb: 1, letterSpacing: "-0.01em" }}>
+              Insider Party!
             </Typography>
-            <Typography
-              variant="body2"
-              align="center"
-              color="text.secondary"
-              sx={{ mb: 3, lineHeight: 1.75 }}
-            >
-              สร้างห้องเล่นกับเพื่อน แล้วลองเดาว่าใครคือ Insider 🎉
+            <Typography variant="body2" align="center" sx={{ color: "#7a6e6d", fontWeight: "bold", mb: 3 }}>
+              ร่วมไขคดีทายคำปริศนาและจับโกหกอินไซเดอร์ 🌸
             </Typography>
 
-            <TextField
-              fullWidth
-              label="ชื่อผู้เล่น"
-              variant="outlined"
-              margin="normal"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-            />
-            <TextField
-              fullWidth
-              label="รหัสห้อง (เช่น ABCD)"
-              variant="outlined"
-              margin="normal"
-              value={roomCodeInput}
-              onChange={(e) =>
-                setRoomCodeInput(e.target.value.toUpperCase())
-              }
-            />
+            <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+              <TextField
+                fullWidth
+                label="กรอกชื่อเล่นของคุณ"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "16px",
+                    bgcolor: "white",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #4a3e3d",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #4a3e3d",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #ff9aa2",
+                    }
+                  },
+                  "& .MuiInputLabel-root": { color: "#7a6e6d", fontWeight: "bold" },
+                  "& .MuiInputLabel-root.Mui-focused": { color: "#ff9aa2" },
+                  "& .MuiInputLabel-shrink": { bgcolor: "white", px: 1, borderRadius: "4px" },
+                  "& .MuiInputBase-input": { fontWeight: "bold", color: "#4a3e3d" }
+                }}
+              />
+              <TextField
+                fullWidth
+                label="รหัสห้อง (Room Code)"
+                value={roomCodeInput}
+                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "16px",
+                    bgcolor: "white",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #4a3e3d",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #4a3e3d",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "2.5px solid #ff9aa2",
+                    }
+                  },
+                  "& .MuiInputLabel-root": { color: "#7a6e6d", fontWeight: "bold" },
+                  "& .MuiInputLabel-root.Mui-focused": { color: "#ff9aa2" },
+                  "& .MuiInputLabel-shrink": { bgcolor: "white", px: 1, borderRadius: "4px" },
+                  "& .MuiInputBase-input": { fontWeight: "bold", color: "#4a3e3d" }
+                }}
+              />
 
-            {error && (
-              <Box sx={{ mt: 2 }}>
-                <Alert severity="error" variant="outlined">
+              {error && (
+                <Alert severity="error" variant="outlined" sx={{ borderRadius: "14px", border: "2px solid #ef4444", color: "#b91c1c", fontWeight: "bold", bgcolor: "#fef2f2" }}>
                   {error}
                 </Alert>
+              )}
+
+              <Box sx={{ display: "flex", gap: 1.5, mt: 1 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => connectToRoom("create")}
+                  disabled={connecting !== null}
+                  sx={{
+                    bgcolor: "#ff9aa2",
+                    color: "white",
+                    border: "3px solid #4a3e3d",
+                    boxShadow: "0 4px 0 #4a3e3d",
+                    borderRadius: "16px",
+                    fontWeight: "900",
+                    py: 1.1,
+                    fontSize: "0.9rem",
+                    "&:hover": { bgcolor: "#ff829d" },
+                    "&.Mui-disabled": { bgcolor: "#f1f5f9", color: "#cbd5e1", border: "2.5px solid #cbd5e1" }
+                  }}
+                >
+                  {connecting === "create" ? "กำลังสร้าง..." : "สร้างห้องใหม่"}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => connectToRoom("join")}
+                  disabled={connecting !== null}
+                  sx={{
+                    color: "#4a3e3d",
+                    borderColor: "#4a3e3d",
+                    borderWidth: "3px",
+                    boxShadow: "0 4px 0 #4a3e3d",
+                    borderRadius: "16px",
+                    fontWeight: "900",
+                    py: 1.1,
+                    fontSize: "0.9rem",
+                    "&:hover": { borderWidth: "3px", borderColor: "#ff9aa2", bgcolor: "#fff0f3" },
+                    "&.Mui-disabled": { bgcolor: "#f1f5f9", color: "#cbd5e1", border: "2.5px solid #cbd5e1" }
+                  }}
+                >
+                  {connecting === "join" ? "กำลังเข้า..." : "เข้าร่วมห้อง"}
+                </Button>
               </Box>
-            )}
-
-            <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                sx={{
-                  bgcolor: "#2563eb",
-                  borderRadius: 999,
-                  py: 1.2,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  "&:hover": { bgcolor: "#1d4ed8" },
-                }}
-                onClick={() => connectToRoom("create")}
-                disabled={connecting !== null}
-                startIcon={
-                  connecting === "create" ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : null
-                }
-              >
-                {connecting === "create" ? "กำลังสร้าง..." : "สร้างห้องใหม่"}
-              </Button>
 
               <Button
                 fullWidth
-                variant="outlined"
-                sx={{
-                  borderColor: "#2563eb",
-                  color: "#1d4ed8",
-                  borderRadius: 999,
-                  py: 1.2,
-                  textTransform: "none",
-                  fontWeight: 700,
-                  "&:hover": {
-                    borderColor: "#1d4ed8",
-                    bgcolor: "rgba(37,99,235,0.06)",
-                  },
-                }}
-                onClick={() => connectToRoom("join")}
+                variant="text"
+                onClick={() => connectToRoom("spectate")}
                 disabled={connecting !== null}
-                startIcon={
-                  connecting === "join" ? (
-                    <CircularProgress size={18} color="inherit" />
-                  ) : null
-                }
+                sx={{ color: "#7a6e6d", fontWeight: "800", fontSize: "0.82rem", py: 1 }}
               >
-                {connecting === "join" ? "กำลังเข้าห้อง..." : "เข้าห้อง"}
+                👀 ขอเป็นเพียงผู้ชม (Spectate)
               </Button>
             </Box>
           </Paper>
@@ -491,162 +528,196 @@ export default function InsiderGamePage() {
     );
   }
 
-  // ---------- phase: GAME แต่ยังไม่มี room ----------
   if (!room) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          bgcolor: "#eef2ff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Typography color="text.secondary">
-          กำลังเชื่อมต่อเซิร์ฟเวอร์...
-        </Typography>
+      <Box sx={{ minHeight: "100vh", bgcolor: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress size={30} sx={{ color: "#ff9aa2", mr: 1.5 }} />
+        <Typography fontWeight="bold" sx={{ color: "#4a3e3d" }}>กำลังโหลดการเชื่อมต่อหน้าคดี...</Typography>
       </Box>
     );
   }
 
   const currentState = room.state;
-
   const isVoting = currentState === "voting";
   const votedMap = room?.voted || {};
   const blockedMap = room?.blockedVoters || {};
-  const iVoted = !!votedMap[selfId];
   const iAmBlocked = !!blockedMap[selfId];
-  const canVote = isVoting && !iAmBlocked && !iVoted && me?.role !== "judge";
+  const iVoted = !!votedMap[selfId];
+  const isSpectator = me?.spectator === true;
+  const canVote = isVoting && !iAmBlocked && !iVoted && me?.role !== "judge" && !isSpectator;
 
-  // deadlock: ทุกคน (ไม่นับ judge) อยู่ใน blockedVoters → ไม่มีใครโหวตได้
-  const eligibleVoters = players.filter(
-    (p) => p.id !== room?.judgeId && !blockedMap[p.id]
-  );
-  const isVoteDeadlock = isVoting && eligibleVoters.length === 0;
-
-  const half = Math.ceil(players.length / 2);
-  const leftPlayers = players.slice(0, half);
-  const rightPlayers = players.slice(half);
-
-  const sharedCardProps = {
-    selfId, room, isHost, onVote: handleVote, voteTarget,
-    canVote, isVoting, votedMap, blockedMap,
+  const sharedTableProps = {
+    players, selfId, room, isHost, voteTarget, onVote: handleVote,
     onKick: (targetId) => {
-      if (window.confirm("ต้องการเตะผู้เล่นคนนี้ออกจากห้องหรือไม่?")) {
+      if (window.confirm("คุณต้องการเตะนักสืบคนนี้ออกจากโต๊ะประชุมจริงหรือไม่?")) {
         send({ type: "kick", targetId });
       }
-    },
+    }
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "linear-gradient(170deg, #1b3a6b 0%, #0c1f3f 100%)", display: "flex", flexDirection: "column" }}>
-
-      {/* Reconnecting banner */}
+    <Box sx={{ minHeight: "100vh", background: "linear-gradient(135deg, #FFF0F5 0%, #E6F2FF 50%, #F0F3FF 100%)", display: "flex", flexDirection: "column", p: { xs: 1, sm: 2 } }}>
+      
+      {/* ป้ายเตือนต่าง ๆ ด้านบนสุด */}
       {reconnecting && (
-        <Box sx={{ bgcolor: "#b45309", px: 2, py: 0.6, display: "flex", alignItems: "center", gap: 1 }}>
-          <CircularProgress size={14} sx={{ color: "white" }} />
-          <Typography variant="caption" sx={{ color: "white", fontWeight: 600 }}>
-            กำลังเชื่อมต่อใหม่... (ครั้งที่ {reconnectCountRef.current}/{MAX_RECONNECT})
+        <Box sx={{ bgcolor: "#fde047", border: "2px solid #4a3e3d", borderRadius: "12px", px: 2, py: 0.6, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+          <CircularProgress size={12} sx={{ color: "#4a3e3d" }} />
+          <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold" }}>
+            กำลังพยายามกู้คืนห้อง... (ลองรอบที่ {reconnectCountRef.current}/{MAX_RECONNECT})
           </Typography>
         </Box>
       )}
 
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1.2, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      {notice && (
+        <Box sx={{ bgcolor: "#fecdd3", border: "2px solid #ef4444", borderRadius: "12px", px: 2, py: 0.8, mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Typography variant="caption" sx={{ color: "#9f1239", fontWeight: "bold" }}>
+            ⚠️ {notice}
+          </Typography>
+          <IconButton size="small" onClick={() => setNotice("")} sx={{ color: "#9f1239", p: 0 }}>✕</IconButton>
+        </Box>
+      )}
+
+      {/* Header สไตล์ Visual Novel */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "20px", px: 2.5, py: 1.2, mb: 2, boxShadow: "0 4px 0 #4a3e3d" }}>
         <Box>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.45)", display: "block", lineHeight: 1 }}>ห้อง</Typography>
-          <Typography sx={{ color: "white", fontFamily: "monospace", fontWeight: "bold", fontSize: "1rem" }}>
+          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>รหัสห้องสืบ</Typography>
+          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
             {room.code || roomCodeInput}
           </Typography>
         </Box>
-        <Box sx={{ textAlign: "center" }}>
-          <Typography sx={{ color: "white", fontFamily: "monospace", fontWeight: "bold", fontSize: "2rem", lineHeight: 1 }}>
-            {formatTime(room.timer ?? 0)}
+
+        <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: 3, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d" }}>
+          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.5rem", lineHeight: 1.1 }}>
+            ⏱️ {formatTime(room.timer ?? 0)}
           </Typography>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.45)" }}>
-            {currentState === "countdown" && "กำลังเล่น"}
-            {currentState === "voting" && "โหวตหา Insider"}
-            {currentState === "lobby" && "รอเริ่ม"}
-            {currentState === "scoreboard" && "จบรอบ"}
-            {currentState === "assign_roles" && "กำลังแจกบทบาท"}
+          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem" }}>
+            {currentState === "countdown" && "เฟสทายคำ"}
+            {currentState === "voting" && "เฟสโหวตฆาตกร"}
+            {currentState === "lobby" && "รอจัดเตรียมรอบ"}
+            {currentState === "scoreboard" && "รอบสิ้นสุดลงแล้ว"}
+            {currentState === "assign_roles" && "กำลังแอบแจกบทบาท..."}
           </Typography>
         </Box>
+
         <Box sx={{ textAlign: "right" }}>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.45)", display: "block", lineHeight: 1 }}>คุณคือ</Typography>
-          <Typography sx={{ color: "white", fontWeight: "bold", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.9rem" }}>
+          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>คุณคือนักสืบ</Typography>
+          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "0.95rem" }}>
             {me?.name || nameInput}
           </Typography>
-          {me?.role && (
-            <Chip size="small" label={me.role.toUpperCase()} sx={{ bgcolor: "rgba(255,255,255,0.12)", color: "white", height: 16, fontSize: "0.58rem", "& .MuiChip-label": { px: 0.7 } }} />
+          {me?.role && !isSpectator && (
+            <Chip size="small" label={me.role.toUpperCase()} sx={{ bgcolor: "#ff9aa2", color: "#fff", border: "1.5px solid #4a3e3d", height: 16, fontSize: "0.55rem", fontWeight: "bold" }} />
+          )}
+          {isSpectator && (
+            <Chip size="small" label="ผู้ชม" sx={{ bgcolor: "#cbd5e1", color: "#475569", border: "1.5px solid #4a3e3d", height: 16, fontSize: "0.55rem", fontWeight: "bold" }} />
           )}
         </Box>
       </Box>
 
-      {/* 3-column layout */}
-      <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
-
-        {/* Left players */}
-        <Box sx={{ width: { xs: 92, sm: 112 }, flexShrink: 0, py: 2, display: "flex", flexDirection: "column", gap: 2, overflowY: "auto", alignItems: "center" }}>
-          {leftPlayers.map((p, i) => (
-            <PlayerCard key={p.id} player={p} number={i + 1} {...sharedCardProps} />
-          ))}
+      {/* Main Layout 2 ฝั่งแบบ Dashboard (แก้วิกฤตมือถือ) */}
+      <Box sx={{ flex: 1, display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 2, overflow: "hidden" }}>
+        
+        {/* ฝั่งซ้าย: โต๊ะประชุมล้อมวง (58% ของหน้าจอฝั่งเดสก์ท็อป) */}
+        <Box sx={{ flex: { xs: "none", md: 5.8 }, display: "flex", flexDirection: "column" }}>
+          <PlayerTable {...sharedTableProps} />
         </Box>
 
-        {/* Center content */}
-        <Box sx={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-          {currentState === "lobby" && (
-            <LobbyView room={room} players={players} me={me} isHost={isHost} isJudge={isJudge} secretWord={secretWord} setSecretWord={setSecretWord} onSetJudge={handleSetJudge} onStartRound={handleStartRound} chatEnabled={chatEnabled} onToggleChat={handleToggleChat} />
-          )}
-          {currentState === "countdown" && (
-            <Box sx={{ p: 2 }}>
-              <TimerView room={room} me={me} isJudge={isJudge} onGuessCorrect={handleGuessCorrect} players={players} />
-            </Box>
-          )}
-          {currentState === "voting" && (
-            <Box sx={{ p: 2 }}>
-              {isVoteDeadlock && (
-                <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)" }}>
-                  <Typography variant="body2" sx={{ color: "#fca5a5", fontWeight: 600 }}>
-                    ⚠️ ทุกคนได้คะแนนเท่ากัน ไม่มีใครโหวตได้
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "rgba(252,165,165,0.8)" }}>
-                    รอ server ตัดสิน หรือให้ Host เริ่มรอบใหม่
-                  </Typography>
-                </Box>
-              )}
+        {/* ฝั่งขวา: คอนเทนต์หลัก + ห้องแชท (42% ของหน้าจอฝั่งเดสก์ท็อป) */}
+        <Box sx={{ flex: { xs: "none", md: 4.2 }, display: "flex", flexDirection: "column", gap: 2 }}>
+          
+          {/* ส่วนเปลี่ยนผ่านเฟสควบคุมของเกม */}
+          <Box sx={{ flex: 1 }}>
+            {currentState === "lobby" && (
+              <LobbyView room={room} players={players} me={me} isHost={isHost} isJudge={isJudge} secretWord={secretWord} setSecretWord={setSecretWord} onSetJudge={handleSetJudge} onStartRound={handleStartRound} chatEnabled={chatEnabled} onToggleChat={handleToggleChat} categories={categories} />
+            )}
+            {currentState === "countdown" && (
+              <TimerView room={room} me={me} isJudge={isJudge} onGuessCorrect={handleGuessCorrect} players={players} onAddHint={handleAddHint} onAskQuestion={handleAskQuestion} />
+            )}
+            {currentState === "voting" && (
               <VotingView room={room} players={players} me={me} />
+            )}
+            {currentState === "scoreboard" && (
+              <ScoreboardView room={room} players={players} insiderId={room.insiderId} me={me} onNextRound={handleNextRound} />
+            )}
+            {currentState === "assign_roles" && (
+              <Paper sx={{ p: 4, borderRadius: "24px", border: "3px solid #4a3e3d", boxShadow: "0 8px 0 #4a3e3d", textAlign: "center" }}>
+                <CircularProgress size={24} sx={{ color: "#ff9aa2", mb: 1 }} />
+                <Typography fontWeight="bold" sx={{ color: "#4a3e3d" }}>กำลังแอบตรวจสอบและแจกบทบาท...</Typography>
+              </Paper>
+            )}
+          </Box>
+
+          {/* คอนเทนต์ Reactions Floating Overlay */}
+          {reactions.length > 0 && (
+            <Box sx={{ position: "fixed", bottom: 120, left: 0, right: 0, zIndex: 1250, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
+              {reactions.map((r) => (
+                <Box key={r.id} sx={{ display: "flex", alignItems: "center", gap: 0.5, className: "anime-float", animation: "floatUp 2s ease-out forwards" }}>
+                  <Typography sx={{ fontSize: "1.8rem" }}>{r.emoji}</Typography>
+                  {r.name && <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold", bgcolor: "white", px: 0.8, py: 0.1, border: "1.5px solid #4a3e3d", borderRadius: "8px" }}>{r.name}</Typography>}
+                </Box>
+              ))}
             </Box>
           )}
-          {currentState === "scoreboard" && (
-            <ScoreboardView room={room} players={players} insiderId={room.insiderId} me={me} onNextRound={handleNextRound} />
-          )}
-          {currentState === "assign_roles" && (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>กำลังแจกบทบาท...</Typography>
-            </Box>
+
+          {/* เมนูแชทข้อความ */}
+          {chatEnabled && (
+            <ChatPanel messages={messages} me={me} value={chatInput} onChange={setChatInput} onSend={handleSendChat} enabled={chatEnabled} />
           )}
         </Box>
+      </Box>
 
-        {/* Right players */}
-        <Box sx={{ width: { xs: 92, sm: 112 }, flexShrink: 0, py: 2, display: "flex", flexDirection: "column", gap: 2, overflowY: "auto", alignItems: "center" }}>
-          {rightPlayers.map((p, i) => (
-            <PlayerCard key={p.id} player={p} number={half + i + 1} {...sharedCardProps} />
+      {/* แผงปุ่มลอยสำหรับสวิตช์เปิดปิดเสียงและออกจากห้อง */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, p: 1.5, bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "18px", boxShadow: "0 4px 0 #4a3e3d" }}>
+        {/* แถบ Reactions */}
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          {["👍", "😂", "😮", "😡", "❓", "🎉"].map((e) => (
+            <IconButton key={e} size="small" onClick={() => handleReact(e)} sx={{ fontSize: "1.2rem", p: 0.5, border: "2px solid transparent", "&:hover": { border: "2px solid #4a3e3d", bgcolor: "#fff0f3" } }}>
+              {e}
+            </IconButton>
           ))}
         </Box>
+
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip title={soundOn ? "ปิดเอฟเฟกต์เสียง" : "เปิดเอฟเฟกต์เสียง"}>
+            <Button
+              onClick={() => setSoundOn(!soundOn)}
+              sx={{
+                bgcolor: "white",
+                color: "#4a3e3d",
+                border: "2px solid #4a3e3d",
+                boxShadow: "0 3px 0 #4a3e3d",
+                borderRadius: "12px",
+                fontWeight: "900",
+                fontSize: "0.8rem",
+                px: 2,
+                minWidth: 42,
+                "&:hover": { bgcolor: "#f1f5f9" }
+              }}
+            >
+              {soundOn ? "🔊" : "🔇"}
+            </Button>
+          </Tooltip>
+          
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleLeaveRoom}
+            sx={{
+              bgcolor: "#ffadad",
+              color: "#7c1a1a",
+              border: "2px solid #4a3e3d",
+              boxShadow: "0 3px 0 #4a3e3d",
+              borderRadius: "12px",
+              fontWeight: "900",
+              fontSize: "0.8rem",
+              px: 3,
+              "&:hover": { bgcolor: "#ff8b8b" }
+            }}
+          >
+            ออกจากห้อง 🚪
+          </Button>
+        </Box>
       </Box>
 
-      {/* Chat */}
-      {chatEnabled && (
-        <ChatPanel messages={messages} me={me} value={chatInput} onChange={setChatInput} onSend={handleSendChat} enabled={chatEnabled} />
-      )}
-
-      {/* Leave button */}
-      <Box sx={{ position: "fixed", bottom: 16, right: 16, zIndex: 1300 }}>
-        <Button variant="contained" color="error" onClick={handleLeaveRoom} sx={{ borderRadius: 999, px: 2.5, py: 1, boxShadow: 6, fontSize: "0.8rem" }}>
-          ออกจากห้อง
-        </Button>
-      </Box>
     </Box>
   );
 }

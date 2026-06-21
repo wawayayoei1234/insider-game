@@ -1,14 +1,5 @@
-
 "use client";
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  IconButton,
-  List,
-  ListItem,
-} from "@mui/material";
+import { Box, Paper, Typography, TextField, IconButton, List, ListItem } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 
 export default function ChatPanel({ messages, me, value, onChange, onSend, enabled }) {
@@ -22,34 +13,27 @@ export default function ChatPanel({ messages, me, value, onChange, onSend, enabl
 
   return (
     <Paper
-      elevation={3}
+      elevation={0}
       sx={{
-        mt: 3,
-        borderRadius: 3,
+        mt: 2,
+        borderRadius: "24px",
         p: 2,
-        bgcolor: "#ffffff",
+        bgcolor: "rgba(255, 255, 255, 0.8)",
+        backdropFilter: "blur(8px)",
+        border: "3px solid #4a3e3d",
+        boxShadow: "0 8px 0 #4a3e3d",
         display: "flex",
         flexDirection: "column",
-        height: 260,
+        height: 250,
       }}
     >
-      <Typography
-        variant="subtitle2"
-        sx={{ mb: 1, color: "#334155", fontWeight: 600 }}
-      >
-        แชทในห้อง
+      <Typography variant="subtitle2" sx={{ mb: 1.2, color: "#4a3e3d", fontWeight: "800", display: "flex", alignItems: "center", gap: 0.5 }}>
+        💬 บันทึกการสนทนานักสืบ
       </Typography>
 
       {/* รายการข้อความ */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          mb: 1,
-          pr: 1,
-        }}
-      >
-        <List dense>
+      <Box sx={{ flex: 1, overflowY: "auto", mb: 1, pr: 0.5 }}>
+        <List dense sx={{ p: 0 }}>
           {messages.map((m, idx) => {
             const isMe = m.from?.id === me?.id;
 
@@ -61,38 +45,40 @@ export default function ChatPanel({ messages, me, value, onChange, onSend, enabl
                   flexDirection: "column",
                   alignItems: isMe ? "flex-end" : "flex-start",
                   px: 0,
-                  mb: 0.5,
+                  py: 0.4,
                 }}
               >
-                {/* ชื่ออยู่นอกกล่องข้อความ */}
+                {/* ชื่อ */}
                 <Typography
                   variant="caption"
                   sx={{
-                    mb: 0.25,
-                    fontWeight: 600,
-                    color: isMe ? "#9ca3af" : "#475569",
-                    alignSelf: isMe ? "flex-end" : "flex-start",
+                    mb: 0.2,
+                    fontWeight: "bold",
+                    color: isMe ? "#5b21b6" : "#4a3e3d",
+                    fontSize: "0.65rem",
                   }}
                 >
-                  {isMe ? "คุณ" : m.from?.name || "ผู้เล่น"}
+                  {isMe ? "คุณ (You)" : m.from?.name || "ผู้เล่น"}
                 </Typography>
 
-     
+                {/* กล่องคำพูดการ์ตูน (Speech bubble) */}
                 <Box
                   sx={{
-                    maxWidth: "80%",
-                    bgcolor: isMe ? "#4f46e5" : "#ffffff",
-                    color: isMe ? "white" : "#111827",
-                    borderRadius: 3,
-                    px: 1.6,
-                    py: 0.9,
-                    boxShadow: 1,
-                    border: isMe ? "none" : "1px solid #e5e7eb",
+                    maxWidth: "85%",
+                    bgcolor: isMe ? "#ffeef2" : "#f1f5f9",
+                    color: "#4a3e3d",
+                    borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                    px: 1.8,
+                    py: 0.8,
+                    border: "2px solid #4a3e3d",
+                    boxShadow: "0 3px 0 #4a3e3d",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                   }}
                 >
-                  <Typography variant="body2">{m.text}</Typography>
+                  <Typography variant="body2" sx={{ fontSize: "0.82rem", fontWeight: "600" }}>
+                    {m.text}
+                  </Typography>
                 </Box>
               </ListItem>
             );
@@ -100,24 +86,49 @@ export default function ChatPanel({ messages, me, value, onChange, onSend, enabl
         </List>
       </Box>
 
-      <Box sx={{ display: "flex", gap: 1 }}>
+      {/* ช่องกรอกข้อความ */}
+      <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
         <TextField
           size="small"
-          placeholder={
-            enabled ? "พิมพ์ข้อความคุยกับเพื่อน..." : "แชทถูกปิดโดย Host"
-          }
+          placeholder={enabled ? "พิมพ์ถามคำถามเพื่อสืบคำปริศนา..." : "🔇 โฮสต์ปิดระบบแชท"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           fullWidth
           disabled={!enabled}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "99px",
+              bgcolor: "white",
+              border: "2px solid #4a3e3d",
+              "& fieldset": { border: "none" },
+              "&.Mui-focused": {
+                border: "2px solid #ff9aa2",
+              }
+            },
+            "& .MuiInputBase-input": {
+              fontSize: "0.8rem",
+              fontWeight: "600",
+              color: "#4a3e3d",
+              py: 0.8,
+              px: 2,
+            }
+          }}
         />
         <IconButton
-          color="primary"
           onClick={onSend}
           disabled={!enabled || !value.trim()}
+          sx={{
+            bgcolor: "#ff9aa2",
+            color: "white",
+            border: "2px solid #4a3e3d",
+            boxShadow: "0 3px 0 #4a3e3d",
+            p: 0.8,
+            "&:hover": { bgcolor: "#ff829d" },
+            "&.Mui-disabled": { bgcolor: "#f1f5f9", color: "#cbd5e1", border: "2px solid #cbd5e1", boxShadow: "none" }
+          }}
         >
-          <SendIcon />
+          <SendIcon sx={{ fontSize: 16 }} />
         </IconButton>
       </Box>
     </Paper>

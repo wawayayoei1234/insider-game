@@ -1,11 +1,11 @@
 {
-  "name": "Insider Game",
-  "short_name": "Insider",
+  "name": "Insider Party",
+  "short_name": "Insider Party",
   "description": "เกมอินไซเดอร์ออนไลน์ เล่นกับเพื่อนผ่านมือถือ รองรับหลายคน สนุกและใช้งานง่าย",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0d0d",
-  "theme_color": "#6c5ce7",
+  "background_color": "#FFF0F5",
+  "theme_color": "#ff9aa2",
   "icons": [
     {
       "src": "/icon-192.png",

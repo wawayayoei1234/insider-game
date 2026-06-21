@@ -1,6 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@300..700&family=Itim&display=swap');
 
-
-body {
-margin: auto;
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Fredoka', 'Itim', 'Quicksand', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
 }
 
+/* Anime Visual Novel Style Animations */
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  80% {
+    opacity: 0.85;
+    transform: translateY(-50px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-80px) scale(0.9);
+  }
+}
+
+@keyframes pulseBorder {
+  0%, 100% {
+    border-color: rgba(244, 63, 94, 0.4);
+    box-shadow: 0 0 0 0px rgba(244, 63, 94, 0.2);
+  }
+  50% {
+    border-color: rgba(244, 63, 94, 1);
+    box-shadow: 0 0 0 8px rgba(244, 63, 94, 0.15);
+  }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes gentleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Utility classes */
+.anime-float {
+  animation: floatUp 3s ease-out forwards;
+}
+
+.anime-bob {
+  animation: gentleBob 3s ease-in-out infinite;
+}
+
+.anime-heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.active-pulse {
+  animation: pulseBorder 2s infinite;
+}
+
+/* Custom Scrollbar for Anime theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffb7c5;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff94ab;
+}

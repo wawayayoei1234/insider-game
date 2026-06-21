@@ -1,24 +1,30 @@
-// src/components/insider/PlayerTable.jsx
+"use client";
 import React from "react";
-import {
-  Box,
-  Typography,
-  Chip,
-  Paper,
-  Stack,
-  IconButton,
-  Tooltip,
-  Avatar,
-} from "@mui/material";
+import { Box, Typography, Chip, Paper, Stack, IconButton, Tooltip, Avatar } from "@mui/material";
 import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import PanToolIcon from "@mui/icons-material/PanTool";
 
-function nameToColor(str = "") {
+// พาเลทสีอวาตาร์อนิเมะน่ารัก ๆ
+const chibiColors = [
+  "#FF9AA2", "#FFB7B2", "#FFDAC1", "#E2F0CB", "#B5EAD7", "#C7CEEA",
+  "#FFC6FF", "#BDB2FF", "#9BF6FF", "#CAFFBF", "#FDFFB6", "#FFADAD"
+];
+
+function getChibiColor(name = "") {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return `hsl(${Math.abs(hash) % 360}, 60%, 50%)`;
+  return chibiColors[Math.abs(hash) % chibiColors.length];
+}
+
+const chibiFiles = ["/chibi1.png", "/chibi2.png", "/chibi3.png", "/chibi4.png"];
+function getChibiSrc(name = "") {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return chibiFiles[Math.abs(hash) % chibiFiles.length];
 }
 
 export default function PlayerTable({ players, selfId, room, isHost, onKick, onVote, voteTarget }) {
@@ -27,12 +33,13 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
   const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
   const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
 
-  // แบ่งผู้เล่น (ไม่นับกรรมการ) ซ้าย/ขวาเท่าๆ กัน
+  // แบ่งผู้เล่นครึ่งซ้ายขวาอย่างสมดุลรอบโต๊ะ
   const leftPlayers = nonJudgePlayers.filter((_, i) => i % 2 === 0);
   const rightPlayers = nonJudgePlayers.filter((_, i) => i % 2 !== 0);
 
   function getSideTop(index, total) {
-    return ((index + 1) / (total + 1)) * 76 + 12;
+    if (total <= 1) return 50;
+    return ((index) / (total - 1)) * 60 + 20; // 20% ถึง 80%
   }
 
   const isVoting = room?.state === "voting";
@@ -44,66 +51,71 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
   const isJudgeSelf = selfRole === "judge";
   const canVote = isVoting && !iAmBlocked && !iVoted && !isJudgeSelf;
 
+  const seats = [
+    ...(judgePlayer ? [{ p: judgePlayer, top: 12, left: 50, isJudgeSeat: true }] : []),
+    ...leftPlayers.map((p, i) => ({ p, top: getSideTop(i, leftPlayers.length), left: 16 })),
+    ...rightPlayers.map((p, i) => ({ p, top: getSideTop(i, rightPlayers.length), left: 84 })),
+  ];
+
   return (
     <Paper
-      elevation={3}
+      elevation={0}
+      className="anime-bob"
       sx={{
-        p: 2,
-        borderRadius: 3,
-        bgcolor: "white",
-        border: "1px solid #e5e7eb",
-        height: { xs: 320, md: 420 },
+        p: 2.5,
+        borderRadius: "24px",
+        bgcolor: "rgba(255, 255, 255, 0.75)",
+        backdropFilter: "blur(10px)",
+        border: "3px solid #4a3e3d",
+        boxShadow: "0 8px 0 #4a3e3d",
+        height: { xs: 340, sm: 400, md: 440 },
         display: "flex",
         flexDirection: "column",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <Typography
-        variant="subtitle1"
-        fontWeight="bold"
-        sx={{ mb: 1, textAlign: "center" }}
-      >
-        โต๊ะเกม
+      <Typography variant="subtitle1" fontWeight="800" align="center" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
+        🔮 โต๊ะประชุมลับนักสืบ
       </Typography>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mb: 1, textAlign: "center" }}
-      >
-        มองจากมุมบน เหมือนทุกคนนั่งล้อมโต๊ะ 🪑
+      <Typography variant="caption" align="center" sx={{ color: "#7a6e6d", mb: 2 }}>
+        *ผู้เล่นที่นั่งล้อมโต๊ะกำลังปรึกษาทายคำปริศนา...
       </Typography>
 
-      <Box
-        sx={{
-          flex: 1,
-          position: "relative",
-          mt: 1,
-        }}
-      >
-        {/* วงกลมโต๊ะ */}
+      <Box sx={{ flex: 1, position: "relative", mt: 1 }}>
+        {/* รูปโต๊ะไม้บอร์ดเกมอนิเมะตรงกลาง */}
         <Box
           sx={{
             position: "absolute",
-            top: "18%",
-            left: "16%",
-            right: "16%",
-            bottom: "18%",
-            borderRadius: 4,
-            bgcolor: "#f1f5f9",
-            border: "3px solid #cbd5f5",
+            top: "22%",
+            left: "24%",
+            right: "24%",
+            bottom: "22%",
+            borderRadius: "50%",
+            background: "url('/wood_texture.png') no-repeat center center",
+            backgroundSize: "cover",
+            border: "4px solid #4a3e3d",
+            boxShadow: "0 6px 0 #4a3e3d, inset 0 0 20px rgba(0,0,0,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-        />
+        >
+          <Typography variant="caption" fontWeight="800" sx={{ color: "#4a3e3d", letterSpacing: "0.05em", fontSize: "0.65rem", textTransform: "uppercase", px: 1, py: 0.5, bgcolor: "rgba(255,255,255,0.75)", borderRadius: "99px", border: "1.5px solid #4a3e3d" }}>
+            INSIDER
+          </Typography>
+        </Box>
 
-        {/* ที่นั่งผู้เล่น */}
-        {[
-          ...(judgePlayer ? [{ p: judgePlayer, top: 8, left: 50 }] : []),
-          ...leftPlayers.map((p, i) => ({ p, top: getSideTop(i, leftPlayers.length), left: 10 })),
-          ...rightPlayers.map((p, i) => ({ p, top: getSideTop(i, rightPlayers.length), left: 90 })),
-        ].map(({ p, top, left }) => {
+        {/* ที่นั่งแต่ละคน */}
+        {seats.map(({ p, top, left, isJudgeSeat }) => {
           const isMe = p.id === selfId;
           const isJudge = p.id === room?.judgeId;
           const isHostSeat = p.id === room?.hostId;
-          const isVotable = canVote && !isMe && !isJudge;
+          const isOffline = p.connected === false;
+          const isVotable = canVote && !isMe && !isJudge && !p.spectator;
           const isSelected = voteTarget === p.id;
+          const isBlocked = !!blockedMap[p.id];
+          const hasVoted = !!votedMap[p.id];
 
           return (
             <Box
@@ -117,141 +129,93 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 0.5,
                 cursor: isVotable ? "pointer" : "default",
-                "&:hover .vote-avatar": isVotable ? { transform: "scale(1.15)" } : {},
+                opacity: isOffline ? 0.5 : 1,
+                zIndex: 10,
+                transition: "all 0.2s ease-in-out",
+                "&:hover": isVotable ? { transform: "translate(-50%, -50%) scale(1.15)" } : {},
               }}
             >
-              {/* Avatar */}
-              <Box sx={{ position: "relative", display: "inline-flex" }}>
+              <Box sx={{ position: "relative" }}>
                 <Avatar
-                  className="vote-avatar"
                   sx={{
-                    width: 34,
-                    height: 34,
-                    bgcolor: nameToColor(p.name),
-                    fontSize: "0.9rem",
-                    fontWeight: "bold",
-                    border: isSelected
-                      ? "2px solid #f43f5e"
-                      : isMe
-                      ? "2px solid #38bdf8"
-                      : "2px solid white",
-                    boxShadow: isSelected
-                      ? "0 0 0 3px rgba(244,63,94,0.35)"
-                      : "0 2px 6px rgba(0,0,0,0.18)",
+                    width: isJudgeSeat ? 46 : 40,
+                    height: isJudgeSeat ? 46 : 40,
+                    bgcolor: "white",
+                    border: isSelected 
+                      ? "3px solid #ff4b5c" 
+                      : isMe 
+                      ? "3px solid #38bdf8" 
+                      : "3.5px solid #4a3e3d",
+                    boxShadow: isSelected 
+                      ? "0 0 12px rgba(255,75,92,0.6)" 
+                      : "0 4px 0 #4a3e3d",
                     transition: "transform 0.15s",
                   }}
                 >
-                  {(p.name || "?")[0].toUpperCase()}
+                  <img src={getChibiSrc(p.name)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="chibi avatar" />
                 </Avatar>
-                {isVoting && !votedMap[p.id] && !isJudge && !blockedMap[p.id] && (
+
+                {/* Badge สถานะโหวตและยกมือ */}
+                {isVoting && !hasVoted && !isJudge && !isBlocked && !isOffline && (
                   <Box
                     sx={{
                       position: "absolute",
                       top: -6,
-                      right: -8,
-                      bgcolor: "#fef9c3",
+                      right: -6,
+                      bgcolor: "#ffe885",
+                      border: "2px solid #4a3e3d",
                       borderRadius: "50%",
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      animation: "gentleBob 1s infinite alternate",
                     }}
                   >
-                    <PanToolIcon sx={{ fontSize: 10, color: "#b45309" }} />
+                    <PanToolIcon sx={{ fontSize: 10, color: "#4a3e3d" }} />
                   </Box>
                 )}
               </Box>
 
-              {/* ชื่อ */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    textAlign: "center",
-                    fontWeight: isMe ? "bold" : "normal",
-                    color: isMe ? "#0369a1" : "#111827",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              {/* ชื่อผู้เล่น */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, mt: 0.8, bgcolor: isMe ? "#e0f2fe" : "rgba(255,255,255,0.9)", border: "2px solid #4a3e3d", borderRadius: "12px", px: 1, py: 0.1, boxShadow: "0 2px 0 #4a3e3d" }}>
+                <Typography variant="caption" fontWeight="800" sx={{ color: "#4a3e3d", fontSize: "0.68rem", maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {p.name}
                 </Typography>
-
-                {/* ปุ่มเตะ – เฉพาะ Host และห้ามเตะตัวเอง */}
+                
                 {isHost && !isMe && (
-                  <Tooltip title="เตะออกจากห้อง">
-                    <IconButton
-                      size="small"
-                      onClick={() => onKick && onKick(p.id)}
-                      sx={{ p: 0.2, color: "#b91c1c", "&:hover": { bgcolor: "#fee2e2" } }}
-                    >
-                      <PersonRemoveIcon fontSize="inherit" />
-                    </IconButton>
-                  </Tooltip>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); onKick && onKick(p.id); }}
+                    sx={{ p: 0, color: "#ff4b5c", ml: 0.2, "&:hover": { color: "#ff0000" } }}
+                  >
+                    <PersonRemoveIcon sx={{ fontSize: 10 }} />
+                  </IconButton>
                 )}
               </Box>
 
-              {/* role badge */}
-              <Stack direction="row" spacing={0.5}>
+              {/* Badges บทบาทเล็ก ๆ */}
+              <Stack direction="row" spacing={0.2} sx={{ mt: 0.4 }}>
                 {isHostSeat && (
-                  <Chip
-                    label="HOST"
-                    size="small"
-                    sx={{
-                      bgcolor: "#fef9c3",
-                      color: "#854d0e",
-                      fontSize: "0.7rem",
-                      height: 20,
-                    }}
-                  />
+                  <Chip label="👑 HOST" size="small" sx={{ bgcolor: "#fef9c3", color: "#854d0e", border: "1.5px solid #4a3e3d", fontSize: "0.5rem", height: 14, "& .MuiChip-label": { px: 0.4, fontWeight: "bold" } }} />
                 )}
                 {isJudge && (
-                  <Chip
-                    label="JUDGE"
-                    size="small"
-                    sx={{
-                      bgcolor: "#dbeafe",
-                      color: "#1d4ed8",
-                      fontSize: "0.7rem",
-                      height: 20,
-                    }}
-                  />
+                  <Chip label="⚖️ JUDGE" size="small" sx={{ bgcolor: "#dbeafe", color: "#1d4ed8", border: "1.5px solid #4a3e3d", fontSize: "0.5rem", height: 14, "& .MuiChip-label": { px: 0.4, fontWeight: "bold" } }} />
+                )}
+                {isOffline && (
+                  <Chip label="💤 หลุด" size="small" sx={{ bgcolor: "#f1f5f9", color: "#64748b", border: "1.5px solid #4a3e3d", fontSize: "0.5rem", height: 14, "& .MuiChip-label": { px: 0.4, fontWeight: "bold" } }} />
                 )}
               </Stack>
 
-              {/* คะแนนเล็ก ๆ ใต้เก้าอี้ */}
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ mt: 0.2 }}
-              >
+              {/* คะแนน */}
+              <Typography variant="caption" fontWeight="bold" sx={{ color: "#7a6e6d", fontSize: "0.6rem", mt: 0.2 }}>
                 {p.score ?? 0} pts
               </Typography>
             </Box>
           );
         })}
-
-        {/* label ตรงกลางโต๊ะ */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            textAlign: "center",
-          }}
-        >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ px: 1, py: 0.5, bgcolor: "white", borderRadius: 999 }}
-          >
-            INSIDER GAME TABLE
-          </Typography>
-        </Box>
       </Box>
     </Paper>
   );
