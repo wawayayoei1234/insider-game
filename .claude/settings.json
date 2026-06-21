@@ -92,7 +92,11 @@
       "Bash(echo \"BUILD EXIT: $?\")",
       "Bash(go vet *)",
       "Bash(echo \"VET EXIT: $?\")",
-      "WebFetch(domain:insider-game.org)"
+      "WebFetch(domain:insider-game.org)",
+      "Bash(npx next *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('agora dep:', \\(p.dependencies&&p.dependencies['agora-rtc-sdk-ng']\\)||\\(p.devDependencies&&p.devDependencies['agora-rtc-sdk-ng']\\)||'NOT LISTED'\\)\")",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\kwan5\\.openclaw\\agents\\main\\sessions",
