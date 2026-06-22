@@ -1,6 +1,11 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Container, TextField, Typography, Alert, CircularProgress, Chip, IconButton, Tooltip, Paper, Divider, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
+import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
+import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LobbyView from "./LobbyView";
 import TimerView from "./TimerView";
 import VotingView from "./VotingView";
@@ -23,6 +28,7 @@ export default function InsiderGamePage() {
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const wsRef = useRef(null);
   const inGameRef = useRef(false);
@@ -311,6 +317,16 @@ export default function InsiderGamePage() {
         console.error("parse message error", err);
       }
     };
+  };
+
+  const handleCopyCode = () => {
+    const code = room?.code || roomCodeInput;
+    if (!code) return;
+    try {
+      navigator.clipboard?.writeText(code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1500);
+    } catch {}
   };
 
   const send = (payload) => {
@@ -630,73 +646,86 @@ export default function InsiderGamePage() {
         </Box>
       )}
 
-      {/* Header สไตล์ Visual Novel */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 1, bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "20px", px: { xs: 1.5, sm: 2.5 }, py: 1.2, mb: 2, boxShadow: "0 4px 0 #4a3e3d" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.8, sm: 1.5 }, minWidth: 0 }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>รหัสห้องสืบ</Typography>
-            <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
+      {/* Header สไตล์การ์ดสะอาด 2 แถว */}
+      <Box sx={{ bgcolor: "white", borderRadius: "22px", px: { xs: 2, sm: 2.5 }, py: { xs: 1.2, sm: 1.5 }, mb: 2, boxShadow: "0 6px 20px rgba(74,62,61,0.12)", border: "1px solid rgba(74,62,61,0.08)" }}>
+        {/* แถวบน: รหัสห้อง + สถานะไมค์ */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+            <Typography sx={{ color: "#6b6463", fontWeight: "700", fontSize: { xs: "0.95rem", sm: "1.05rem" }, whiteSpace: "nowrap" }}>
+              รหัสห้องสืบ:
+            </Typography>
+            <Typography fontWeight="900" sx={{ color: "#0e7490", fontSize: { xs: "1.3rem", sm: "1.5rem" }, lineHeight: 1, letterSpacing: "0.02em" }}>
               {room.code || roomCodeInput}
             </Typography>
+            <Tooltip title={codeCopied ? "คัดลอกแล้ว!" : "คัดลอกรหัสห้อง"}>
+              <IconButton size="small" onClick={handleCopyCode} sx={{ color: codeCopied ? "#16a34a" : "#9ca3af", p: 0.4, "&:hover": { color: "#0e7490", bgcolor: "#ecfeff" } }}>
+                {codeCopied ? <CheckIcon sx={{ fontSize: 18 }} /> : <ContentCopyIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="วิธีเล่นเกม">
+              <IconButton size="small" onClick={() => setRulesOpen(true)} sx={{ color: "#ff9aa2", p: 0.4, "&:hover": { color: "#ff4b6b", bgcolor: "#fff0f3" } }}>
+                <MenuBookIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
-          <Tooltip title="วิธีเล่นเกม">
-            <IconButton
-              size="small"
-              onClick={() => setRulesOpen(true)}
+
+          {/* ป้ายสถานะไมค์ */}
+          {process.env.NEXT_PUBLIC_AGORA_APP_ID && (
+            <Box
               sx={{
-                bgcolor: "#fff0f3",
-                color: "#ff9aa2",
-                border: "2px solid #4a3e3d",
-                boxShadow: "0 2px 0 #4a3e3d",
-                p: 0.6,
-                "&:hover": { bgcolor: "#ffe0e5" }
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                flexShrink: 0,
+                bgcolor: voiceActive ? "#d1faf0" : voiceError ? "#fee2e2" : "#f1f5f9",
+                color: voiceActive ? "#0d9488" : voiceError ? "#dc2626" : "#64748b",
+                borderRadius: "99px",
+                px: 1.2,
+                py: 0.4,
               }}
             >
-              📖
-            </IconButton>
-          </Tooltip>
-          {/* Voice Chat Connection Status Badge */}
-          {process.env.NEXT_PUBLIC_AGORA_APP_ID && (
-            <Chip 
-              size="small" 
-              label={voiceActive ? "🎙️ ไมค์พร้อมใช้" : voiceError ? "🎙️ ข้อผิดพลาดไมค์" : "🎙️ กำลังเปิดไมค์..."} 
-              sx={{ 
-                fontWeight: "900", 
-                fontSize: "0.62rem", 
-                border: "2.5px solid #4a3e3d", 
-                height: 22,
-                bgcolor: voiceActive ? "#bbf7d0" : voiceError ? "#fee2e2" : "#f1f5f9",
-                color: "#4a3e3d",
-                boxShadow: "0 2px 0 #4a3e3d"
-              }}
-            />
+              <KeyboardVoiceIcon sx={{ fontSize: 16 }} />
+              <Typography sx={{ fontWeight: "800", fontSize: { xs: "0.72rem", sm: "0.8rem" }, whiteSpace: "nowrap" }}>
+                {voiceActive ? "Mic Active" : voiceError ? "Mic Error" : "Connecting..."}
+              </Typography>
+            </Box>
           )}
         </Box>
 
-        <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: { xs: 1.5, sm: 3 }, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d", flexShrink: 0 }}>
-          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: { xs: "1.2rem", sm: "1.5rem" }, lineHeight: 1.1 }}>
-            ⏱️ {formatTime(room.timer ?? 0)}
-          </Typography>
-          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem", whiteSpace: "nowrap" }}>
-            {currentState === "countdown" && "เฟสทายคำ"}
-            {currentState === "voting" && "เฟสสืบสวนหาอินไซเดอร์"}
-            {currentState === "lobby" && "รอจัดเตรียมรอบ"}
-            {currentState === "scoreboard" && "รอบสิ้นสุดลงแล้ว"}
-            {currentState === "assign_roles" && "กำลังแอบแจกบทบาท..."}
-          </Typography>
-        </Box>
+        <Divider sx={{ my: { xs: 1, sm: 1.2 }, borderColor: "rgba(74,62,61,0.1)" }} />
 
-        <Box sx={{ textAlign: "right" }}>
-          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>คุณคือนักสืบ</Typography>
-          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "0.95rem" }}>
-            {me?.name || nameInput}
-          </Typography>
-          {me?.role && !isSpectator && (
-            <Chip size="small" label={me.role.toUpperCase()} sx={{ bgcolor: "#ff9aa2", color: "#fff", border: "1.5px solid #4a3e3d", height: 16, fontSize: "0.55rem", fontWeight: "bold" }} />
-          )}
-          {isSpectator && (
-            <Chip size="small" label="ผู้ชม" sx={{ bgcolor: "#cbd5e1", color: "#475569", border: "1.5px solid #4a3e3d", height: 16, fontSize: "0.55rem", fontWeight: "bold" }} />
-          )}
+        {/* แถวล่าง: ชื่อผู้เล่น + นาฬิกา */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, minWidth: 0 }}>
+            <Typography sx={{ color: "#6b6463", fontWeight: "700", fontSize: { xs: "0.95rem", sm: "1.05rem" }, whiteSpace: "nowrap" }}>
+              คุณคือ:
+            </Typography>
+            <RecordVoiceOverIcon sx={{ fontSize: 22, color: "#94a3b8", flexShrink: 0 }} />
+            <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: { xs: "1.05rem", sm: "1.15rem" }, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {me?.name || nameInput}
+            </Typography>
+            {me?.role && !isSpectator && (
+              <Chip size="small" label={me.role.toUpperCase()} sx={{ bgcolor: "#ff9aa2", color: "#fff", height: 18, fontSize: "0.58rem", fontWeight: "800", flexShrink: 0 }} />
+            )}
+            {isSpectator && (
+              <Chip size="small" label="ผู้ชม" sx={{ bgcolor: "#cbd5e1", color: "#475569", height: 18, fontSize: "0.58rem", fontWeight: "800", flexShrink: 0 }} />
+            )}
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+            <Box sx={{ bgcolor: "#7c6aa8", borderRadius: "99px", px: { xs: 1.6, sm: 2 }, py: 0.4 }}>
+              <Typography fontWeight="900" sx={{ color: "white", fontSize: { xs: "1.15rem", sm: "1.3rem" }, lineHeight: 1.1, letterSpacing: "0.04em" }}>
+                {formatTime(room.timer ?? 0)}
+              </Typography>
+            </Box>
+            <Typography sx={{ color: "#9ca3af", fontWeight: "700", fontSize: "0.6rem", mt: 0.2, whiteSpace: "nowrap" }}>
+              {currentState === "countdown" && "เฟสทายคำ"}
+              {currentState === "voting" && "เฟสสืบสวน"}
+              {currentState === "lobby" && "รอจัดเตรียมรอบ"}
+              {currentState === "scoreboard" && "รอบสิ้นสุดแล้ว"}
+              {currentState === "assign_roles" && "กำลังแจกบทบาท..."}
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
