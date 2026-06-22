@@ -47,6 +47,7 @@ export default function InsiderGamePage() {
   const savedCredsRef = useRef(null);
   const reconnectCountRef = useRef(0);
   const reconnectTimerRef = useRef(null);
+  const pingTimerRef = useRef(null);
 
   const [room, setRoom] = useState(null);
   const [selfId, setSelfId] = useState(null);
@@ -136,6 +137,10 @@ export default function InsiderGamePage() {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
+    if (pingTimerRef.current) {
+      clearInterval(pingTimerRef.current);
+      pingTimerRef.current = null;
+    }
     localStorage.removeItem("insider_session");
   };
 
@@ -202,10 +207,21 @@ export default function InsiderGamePage() {
       reconnectCountRef.current = 0;
       setReconnectCount(0);
       setReconnecting(false);
+
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current);
+      pingTimerRef.current = setInterval(() => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 30000);
     };
 
     socket.onclose = () => {
       console.log("WS closed");
+      if (pingTimerRef.current) {
+        clearInterval(pingTimerRef.current);
+        pingTimerRef.current = null;
+      }
       wsRef.current = null;
       setConnecting(null);
 
