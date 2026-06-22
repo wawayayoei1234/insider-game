@@ -6,7 +6,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineRounded";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LobbyView from "./LobbyView";
