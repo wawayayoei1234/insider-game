@@ -18,30 +18,17 @@ function getChibiColor(name = "") {
   return chibiColors[Math.abs(hash) % chibiColors.length];
 }
 
-// อาร์เรย์ของ Chibi Emoji กวน ๆ น่ารัก ๆ เพื่อให้เข้ากับสไตล์อนิเมะ
-const chibiEmojis = ["🕵️‍♀️", "🔍", "🧐", "🤫", "🤪", "🥺", "😎", "🦊", "🌸", "🍕", "🎮", "🧸"];
-function getChibiEmoji(name = "") {
+const chibiFiles = ["/chibi1.png", "/chibi2.png", "/chibi3.png", "/chibi4.png"];
+function getChibiSrc(name = "") {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return chibiEmojis[Math.abs(hash) % chibiEmojis.length];
+  return chibiFiles[Math.abs(hash) % chibiFiles.length];
 }
 
 export default function PlayerTable({ players, selfId, room, isHost, onKick, onVote, voteTarget }) {
   if (!players || players.length === 0) return null;
-
-  const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
-  const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
-
-  // แบ่งผู้เล่นครึ่งซ้ายขวาอย่างสมดุลรอบโต๊ะ
-  const leftPlayers = nonJudgePlayers.filter((_, i) => i % 2 === 0);
-  const rightPlayers = nonJudgePlayers.filter((_, i) => i % 2 !== 0);
-
-  function getSideTop(index, total) {
-    if (total <= 1) return 50;
-    return ((index) / (total - 1)) * 60 + 20; // 20% ถึง 80%
-  }
 
   const isVoting = room?.state === "voting";
   const votedMap = room?.voted || {};
@@ -52,11 +39,33 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
   const isJudgeSelf = selfRole === "judge";
   const canVote = isVoting && !iAmBlocked && !iVoted && !isJudgeSelf;
 
-  const seats = [
-    ...(judgePlayer ? [{ p: judgePlayer, top: 12, left: 50, isJudgeSeat: true }] : []),
-    ...leftPlayers.map((p, i) => ({ p, top: getSideTop(i, leftPlayers.length), left: 16 })),
-    ...rightPlayers.map((p, i) => ({ p, top: getSideTop(i, rightPlayers.length), left: 84 })),
-  ];
+  const judgePlayer = players.find((p) => p.id === room?.judgeId) || null;
+  const nonJudgePlayers = players.filter((p) => p.id !== room?.judgeId);
+
+  const seats = [];
+  if (judgePlayer) {
+    seats.push({ p: judgePlayer, top: 12, left: 50, isJudgeSeat: true });
+  }
+
+  const centerX = 50;
+  const centerY = 52;
+  const rx = 36; // horizontal radius of the ellipse
+  const ry = 30; // vertical radius of the ellipse
+  const n = nonJudgePlayers.length;
+
+  nonJudgePlayers.forEach((p, index) => {
+    let angle;
+    if (n === 1) {
+      angle = Math.PI / 2; // Directly opposite to the Judge at the bottom
+    } else {
+      // Distribute evenly around the circle, leaving the top (-90 deg) free for the Judge
+      const step = (Math.PI * 2) / (n + 1);
+      angle = -Math.PI / 2 + step * (index + 1);
+    }
+    const x = centerX + rx * Math.cos(angle);
+    const y = centerY + ry * Math.sin(angle);
+    seats.push({ p, top: y, left: x });
+  });
 
   return (
     <Paper
@@ -93,7 +102,8 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
             right: "24%",
             bottom: "22%",
             borderRadius: "50%",
-            background: "radial-gradient(circle, #ffe3e8 0%, #ffc0cb 70%, #ff9aa2 100%)",
+            background: "url('/wood_texture.png') no-repeat center center",
+            backgroundSize: "cover",
             border: "4px solid #4a3e3d",
             boxShadow: "0 6px 0 #4a3e3d, inset 0 0 20px rgba(0,0,0,0.08)",
             display: "flex",
@@ -136,14 +146,12 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                 "&:hover": isVotable ? { transform: "translate(-50%, -50%) scale(1.15)" } : {},
               }}
             >
-              {/* อวาตาร์แบบ Chibi จี๊ดจ๊าด */}
               <Box sx={{ position: "relative" }}>
                 <Avatar
                   sx={{
                     width: isJudgeSeat ? 46 : 40,
                     height: isJudgeSeat ? 46 : 40,
-                    bgcolor: getChibiColor(p.name),
-                    fontSize: isJudgeSeat ? "1.5rem" : "1.3rem",
+                    bgcolor: "white",
                     border: isSelected 
                       ? "3px solid #ff4b5c" 
                       : isMe 
@@ -155,7 +163,7 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                     transition: "transform 0.15s",
                   }}
                 >
-                  {getChibiEmoji(p.name)}
+                  <img src={getChibiSrc(p.name)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="chibi avatar" />
                 </Avatar>
 
                 {/* Badge สถานะโหวตและยกมือ */}
