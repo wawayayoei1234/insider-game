@@ -4,6 +4,9 @@ import { Box, Button, Container, TextField, Typography, Alert, CircularProgress,
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import KeyboardVoiceIcon from "@mui/icons-material/KeyboardVoice";
+import MicOffIcon from "@mui/icons-material/MicOff";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LobbyView from "./LobbyView";
@@ -615,6 +618,15 @@ export default function InsiderGamePage() {
   const isSpectator = me?.spectator === true;
   const canVote = isVoting && !iAmBlocked && !iVoted && me?.role !== "judge" && !isSpectator;
 
+  // สถานะป้ายไมค์ (สะท้อนสถานะจริง: ปิด / เปิด / กำลังเชื่อมต่อ / ขัดข้อง)
+  const micStatus = voiceError
+    ? { label: "ไมค์ขัดข้อง", Icon: ErrorOutlineIcon, bg: "#fee2e2", color: "#dc2626", pulse: false }
+    : !voiceActive
+    ? { label: "กำลังเชื่อมต่อ...", Icon: HourglassEmptyIcon, bg: "#f1f5f9", color: "#64748b", pulse: false }
+    : isMuted
+    ? { label: "ไมค์ปิด", Icon: MicOffIcon, bg: "#f1f5f9", color: "#64748b", pulse: false }
+    : { label: "ไมค์เปิด", Icon: KeyboardVoiceIcon, bg: "#d1faf0", color: "#0d9488", pulse: true };
+
   const sharedTableProps = {
     players, selfId, room, isHost, voteTarget, onVote: handleVote, speakingList,
     onKick: (targetId) => {
@@ -669,7 +681,7 @@ export default function InsiderGamePage() {
             </Tooltip>
           </Box>
 
-          {/* ป้ายสถานะไมค์ */}
+          {/* ป้ายสถานะไมค์ (สะท้อนสถานะจริง) */}
           {process.env.NEXT_PUBLIC_AGORA_APP_ID && (
             <Box
               sx={{
@@ -677,16 +689,17 @@ export default function InsiderGamePage() {
                 alignItems: "center",
                 gap: 0.5,
                 flexShrink: 0,
-                bgcolor: voiceActive ? "#d1faf0" : voiceError ? "#fee2e2" : "#f1f5f9",
-                color: voiceActive ? "#0d9488" : voiceError ? "#dc2626" : "#64748b",
+                bgcolor: micStatus.bg,
+                color: micStatus.color,
                 borderRadius: "99px",
                 px: 1.2,
                 py: 0.4,
+                ...(micStatus.pulse && { animation: "micPulse 1.4s ease-in-out infinite" }),
               }}
             >
-              <KeyboardVoiceIcon sx={{ fontSize: 16 }} />
+              <micStatus.Icon sx={{ fontSize: 16 }} />
               <Typography sx={{ fontWeight: "800", fontSize: { xs: "0.72rem", sm: "0.8rem" }, whiteSpace: "nowrap" }}>
-                {voiceActive ? "Mic Active" : voiceError ? "Mic Error" : "Connecting..."}
+                {micStatus.label}
               </Typography>
             </Box>
           )}
