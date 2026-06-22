@@ -26,6 +26,15 @@ function formatTime(sec) {
   return `${m}:${s}`;
 }
 
+const generateRandomCode = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let randomCode = "";
+  for (let i = 0; i < 4; i++) {
+    randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return randomCode;
+};
+
 export default function InsiderGamePage() {
   const [phase, setPhase] = useState("join");
   const [roomCodeInput, setRoomCodeInput] = useState("");
@@ -44,6 +53,7 @@ export default function InsiderGamePage() {
   const [error, setError] = useState("");
   const [connecting, setConnecting] = useState(null);
   const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectCount, setReconnectCount] = useState(0);
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
 
@@ -120,6 +130,7 @@ export default function InsiderGamePage() {
     inGameRef.current = false;
     savedCredsRef.current = null;
     reconnectCountRef.current = 0;
+    setReconnectCount(0);
     setReconnecting(false);
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -164,13 +175,8 @@ export default function InsiderGamePage() {
     if (!name) { setError("กรุณากรอกชื่อผู้เล่น"); return; }
     
     if (mode === "create" && !roomCode) {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      let randomCode = "";
-      for (let i = 0; i < 4; i++) {
-        randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      roomCode = randomCode;
-      setRoomCodeInput(randomCode);
+      roomCode = generateRandomCode();
+      setRoomCodeInput(roomCode);
     }
     
     if (!roomCode) { setError("กรุณากรอกรหัสห้อง"); return; }
@@ -194,6 +200,7 @@ export default function InsiderGamePage() {
     socket.onopen = () => {
       console.log("WS connected");
       reconnectCountRef.current = 0;
+      setReconnectCount(0);
       setReconnecting(false);
     };
 
@@ -214,6 +221,7 @@ export default function InsiderGamePage() {
           return;
         }
         reconnectCountRef.current += 1;
+        setReconnectCount(reconnectCountRef.current);
         setReconnecting(true);
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
         reconnectTimerRef.current = setTimeout(() => {
@@ -652,7 +660,7 @@ export default function InsiderGamePage() {
         <Box sx={{ bgcolor: "#fde047", border: "2px solid #4a3e3d", borderRadius: "12px", px: 2, py: 0.6, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
           <CircularProgress size={12} sx={{ color: "#4a3e3d" }} />
           <Typography variant="caption" sx={{ color: "#4a3e3d", fontWeight: "bold" }}>
-            กำลังพยายามกู้คืนห้อง... (ลองรอบที่ {reconnectCountRef.current}/{MAX_RECONNECT})
+            กำลังพยายามกู้คืนห้อง... (ลองรอบที่ {reconnectCount}/{MAX_RECONNECT})
           </Typography>
         </Box>
       )}
@@ -912,7 +920,7 @@ export default function InsiderGamePage() {
         <DialogContent sx={{ pb: 3 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
             <Typography variant="body2" sx={{ color: "#7a6e6d", fontWeight: "bold" }}>
-              เกมปาร์ตี้ทายคำแนวจับโกหก! ฝ่ายนักสืบและกรรมการจะต้องร่วมมือกันทายคำศัพท์ปริศนา ในขณะที่มี "สายลับอินไซเดอร์" แอบรู้คำเฉลยและกำลังชักใยการเดาอยู่เบื้องหลังโดยไม่ให้ใครจับได้
+              เกมปาร์ตี้ทายคำแนวจับโกหก! ฝ่ายนักสืบและกรรมการจะต้องร่วมมือกันทายคำศัพท์ปริศนา ในขณะที่มี &quot;สายลับอินไซเดอร์&quot; แอบรู้คำเฉลยและกำลังชักใยการเดาอยู่เบื้องหลังโดยไม่ให้ใครจับได้
             </Typography>
 
             <Divider sx={{ borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
@@ -947,15 +955,15 @@ export default function InsiderGamePage() {
                 1. เฟสทายคำ:
               </Typography>
               <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", pl: 1, display: "block" }}>
-                • ช่วยกันพิมพ์แชทสืบหาคำปริศนาจากกรรมการ (เช่น "เป็นของกินใช่ไหม?", "ใช้ในบ้านรึเปล่า?")
+                • ช่วยกันพิมพ์แชทสืบหาคำปริศนาจากกรรมการ (เช่น &quot;เป็นของกินใช่ไหม?&quot;, &quot;ใช้ในบ้านรึเปล่า?&quot;)
                 <br />• ต้องเดาให้ถูกก่อนหมดเวลา ไม่เช่นนั้นจะแพ้ทั้งหมด (ไม่มีใครได้รับคะแนน)
               </Typography>
 
               <Typography variant="body2" fontWeight="bold" sx={{ color: "#4a3e3d", mt: 1 }}>
-                2. เฟสโหวตจับโปหก:
+                2. เฟสโหวตจับโกหก:
               </Typography>
               <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", pl: 1, display: "block" }}>
-                • หลังทายถูก ทุกคนจะร่วมกันพูดคุยและกดโหวตผู้ต้องสงสัยบน **"โต๊ะประชุมหลัก"**
+                • หลังทายถูก ทุกคนจะร่วมกันพูดคุยและกดโหวตผู้ต้องสงสัยบน **&quot;โต๊ะประชุมหลัก&quot;**
                 <br />• หากโหวตจับ Insider ได้ถูกต้อง ฝ่าย Commons จะชนะ
                 <br />• **หากโหวตจับผิดคน** ถือว่าโหวตล้มเหลว ฝ่าย Insider จะเป็นผู้ชนะ
                 <br />• **หากผลโหวตเสมอกัน** คนที่คะแนนเท่ากันจะถูกตัดสิทธิ์ แล้วโหวตใหม่จนกว่าจะเหลือผู้ต้องสงสัยเพียงคนเดียว

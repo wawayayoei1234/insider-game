@@ -29,7 +29,9 @@ export default function useAgoraVoice(roomCode, selfId, isConnected) {
 
     if (!AGORA_APP_ID) {
       console.warn("Agora APP ID is missing. Voice chat is disabled.");
-      setErrorMsg("กรุณาตั้งค่า Agora App ID ในไฟล์ .env เพื่อใช้ระบบคุยเสียง");
+      setTimeout(() => {
+        setErrorMsg("กรุณาตั้งค่า Agora App ID ในไฟล์ .env เพื่อใช้ระบบคุยเสียง");
+      }, 0);
       return;
     }
 
