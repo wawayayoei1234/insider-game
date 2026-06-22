@@ -26,7 +26,7 @@ export default function LobbyView({
   const canStart =
     // !!room.judgeId &&   // Wait! In lobby, the host chooses a judge first. Let's make sure it's valid.
     !!room.judgeId &&
-    nonJudgeCount >= 1 &&
+    nonJudgeCount >= 2 &&
     (useRandom || secretWord.trim() !== "");
 
   const handleStart = () => {
@@ -126,24 +126,31 @@ export default function LobbyView({
             ✨ คุณคือ “กรรมการ” ของตานี้! พิมพ์คำปริศนาเอง หรือสุ่มคำอัตโนมัติ:
           </Typography>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={useRandom}
-                onChange={(e) => setUseRandom(e.target.checked)}
-                color="primary"
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#ff9aa2" },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#ff9aa2" }
-                }}
-              />
-            }
-            label={
-              <Typography variant="body2" fontWeight="800" sx={{ color: "#4a3e3d" }}>
-                🎲 ใช้ระบบสุ่มคำศัพท์อัตโนมัติ
-              </Typography>
-            }
-          />
+          <Button
+            variant={useRandom ? "contained" : "outlined"}
+            onClick={() => setUseRandom(!useRandom)}
+            sx={{
+              bgcolor: useRandom ? "#ffeef2" : "white",
+              color: "#4a3e3d",
+              border: "2.5px solid #4a3e3d",
+              boxShadow: useRandom ? "0 2px 0 #4a3e3d" : "0 4px 0 #4a3e3d",
+              transform: useRandom ? "translateY(2px)" : "none",
+              borderRadius: "14px",
+              fontWeight: "900",
+              py: 1,
+              "&:hover": {
+                bgcolor: useRandom ? "#ffe2e6" : "#f8fafc",
+                border: "2.5px solid #4a3e3d",
+              },
+              textTransform: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1
+            }}
+          >
+            {useRandom ? "🎲 ใช้ระบบสุ่มคำศัพท์อัตโนมัติ (เปิด)" : "✍️ ป้อนคำศัพท์ด้วยตนเอง (ปิด)"}
+          </Button>
 
           {useRandom ? (
             <FormControl size="small" fullWidth>
@@ -225,7 +232,7 @@ export default function LobbyView({
           </Button>
 
           <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "600", mt: 0.5 }}>
-            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + ผู้เล่นอื่นอย่างน้อย 1 คน และกรอกคำใบ้แล้ว (แนะนำ 4 คนขึ้นไปเพื่อความสนุก)
+            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + ผู้เล่นอื่นอย่างน้อย 2 คน และกรอกคำใบ้แล้ว (แนะนำ 4 คนขึ้นไปเพื่อความสนุก)
           </Typography>
         </Box>
       ) : (

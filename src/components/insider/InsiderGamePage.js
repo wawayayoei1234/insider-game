@@ -43,7 +43,6 @@ export default function InsiderGamePage() {
     selfId,
     phase === "game"
   );
-
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [notice, setNotice] = useState("");
@@ -160,11 +159,22 @@ export default function InsiderGamePage() {
 
   const connectToRoom = (mode, creds = null) => {
     const name = creds?.name || nameInput.trim();
-    const roomCode = creds?.roomCode || roomCodeInput.trim();
+    let roomCode = creds?.roomCode || roomCodeInput.trim();
 
     setError("");
 
     if (!name) { setError("กรุณากรอกชื่อผู้เล่น"); return; }
+    
+    if (mode === "create" && !roomCode) {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let randomCode = "";
+      for (let i = 0; i < 4; i++) {
+        randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      roomCode = randomCode;
+      setRoomCodeInput(randomCode);
+    }
+    
     if (!roomCode) { setError("กรุณากรอกรหัสห้อง"); return; }
 
     setConnecting(mode);
@@ -642,7 +652,6 @@ export default function InsiderGamePage() {
               📖
             </IconButton>
           </Tooltip>
-
           {/* Voice Chat Connection Status Badge */}
           {process.env.NEXT_PUBLIC_AGORA_APP_ID && (
             <Chip 
@@ -667,7 +676,7 @@ export default function InsiderGamePage() {
           </Typography>
           <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem", whiteSpace: "nowrap" }}>
             {currentState === "countdown" && "เฟสทายคำ"}
-            {currentState === "voting" && "เฟสโหวตฆาตกร"}
+            {currentState === "voting" && "เฟสสืบสวนหาอินไซเดอร์"}
             {currentState === "lobby" && "รอจัดเตรียมรอบ"}
             {currentState === "scoreboard" && "รอบสิ้นสุดลงแล้ว"}
             {currentState === "assign_roles" && "กำลังแอบแจกบทบาท..."}
@@ -784,7 +793,6 @@ export default function InsiderGamePage() {
               </Button>
             </span>
           </Tooltip>
-
           <Tooltip title={soundOn ? "ปิดเอฟเฟกต์เสียง" : "เปิดเอฟเฟกต์เสียง"}>
             <Button
               onClick={() => setSoundOn(!soundOn)}
