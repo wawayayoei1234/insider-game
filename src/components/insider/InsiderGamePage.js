@@ -152,6 +152,9 @@ export default function InsiderGamePage() {
     setSelfId(null);
     setPhase("join");
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      try {
+        wsRef.current.send(JSON.stringify({ type: "leave" }));
+      } catch (e) {}
       wsRef.current.close();
     }
     wsRef.current = null;
@@ -628,8 +631,8 @@ export default function InsiderGamePage() {
       )}
 
       {/* Header สไตล์ Visual Novel */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "20px", px: 2.5, py: 1.2, mb: 2, boxShadow: "0 4px 0 #4a3e3d" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 1, bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "20px", px: { xs: 1.5, sm: 2.5 }, py: 1.2, mb: 2, boxShadow: "0 4px 0 #4a3e3d" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.8, sm: 1.5 }, minWidth: 0 }}>
           <Box>
             <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "800", display: "block" }}>รหัสห้องสืบ</Typography>
             <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.1rem" }}>
@@ -670,8 +673,8 @@ export default function InsiderGamePage() {
           )}
         </Box>
 
-        <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: 3, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d" }}>
-          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: "1.5rem", lineHeight: 1.1 }}>
+        <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: { xs: 1.5, sm: 3 }, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d", flexShrink: 0 }}>
+          <Typography fontWeight="900" sx={{ color: "#4a3e3d", fontSize: { xs: "1.2rem", sm: "1.5rem" }, lineHeight: 1.1 }}>
             ⏱️ {formatTime(room.timer ?? 0)}
           </Typography>
           <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", fontSize: "0.62rem", whiteSpace: "nowrap" }}>
@@ -759,17 +762,17 @@ export default function InsiderGamePage() {
       </Box>
 
       {/* แผงปุ่มลอยสำหรับสวิตช์เปิดปิดเสียงและออกจากห้อง */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2, p: 1.5, bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "18px", boxShadow: "0 4px 0 #4a3e3d" }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: { xs: "center", sm: "space-between" }, alignItems: "center", gap: 1, mt: 2, p: { xs: 1, sm: 1.5 }, bgcolor: "white", border: "3px solid #4a3e3d", borderRadius: "18px", boxShadow: "0 4px 0 #4a3e3d" }}>
         {/* แถบ Reactions */}
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.3, justifyContent: "center" }}>
           {["👍", "😂", "😮", "😡", "❓", "🎉"].map((e) => (
-            <IconButton key={e} size="small" onClick={() => handleReact(e)} sx={{ fontSize: "1.2rem", p: 0.5, border: "2px solid transparent", "&:hover": { border: "2px solid #4a3e3d", bgcolor: "#fff0f3" } }}>
+            <IconButton key={e} size="small" onClick={() => handleReact(e)} sx={{ fontSize: { xs: "1rem", sm: "1.2rem" }, p: { xs: 0.4, sm: 0.5 }, border: "2px solid transparent", "&:hover": { border: "2px solid #4a3e3d", bgcolor: "#fff0f3" } }}>
               {e}
             </IconButton>
           ))}
         </Box>
 
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexShrink: 0, flexWrap: "wrap", justifyContent: "center" }}>
           <Tooltip title={!process.env.NEXT_PUBLIC_AGORA_APP_ID ? "ไม่ได้ตั้งค่าระบบคุยเสียง (.env)" : isMuted ? "เปิดไมโครโฟน" : "ปิดไมโครโฟน"}>
             <span>
               <Button
@@ -783,8 +786,8 @@ export default function InsiderGamePage() {
                   borderRadius: "12px",
                   fontWeight: "900",
                   fontSize: "0.8rem",
-                  px: 2,
-                  minWidth: 42,
+                  px: { xs: 1.2, sm: 2 },
+                  minWidth: 0,
                   "&:hover": { bgcolor: isMuted ? "#f1f5f9" : "#86efac" },
                   "&.Mui-disabled": { opacity: 0.5, bgcolor: "#e2e8f0", border: "2px solid #cbd5e1", boxShadow: "0 3px 0 #cbd5e1" }
                 }}
@@ -804,15 +807,15 @@ export default function InsiderGamePage() {
                 borderRadius: "12px",
                 fontWeight: "900",
                 fontSize: "0.8rem",
-                px: 2,
-                minWidth: 42,
+                px: { xs: 1.2, sm: 2 },
+                minWidth: 0,
                 "&:hover": { bgcolor: "#f1f5f9" }
               }}
             >
               {soundOn ? "🔊" : "🔇"}
             </Button>
           </Tooltip>
-          
+
           <Button
             variant="contained"
             color="error"
@@ -825,7 +828,8 @@ export default function InsiderGamePage() {
               borderRadius: "12px",
               fontWeight: "900",
               fontSize: "0.8rem",
-              px: 3,
+              px: { xs: 1.8, sm: 3 },
+              whiteSpace: "nowrap",
               "&:hover": { bgcolor: "#ff8b8b" }
             }}
           >
