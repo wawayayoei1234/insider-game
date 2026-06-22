@@ -150,8 +150,8 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
               <Box sx={{ position: "relative" }}>
                 <Avatar
                   sx={{
-                    width: isJudgeSeat ? 46 : 40,
-                    height: isJudgeSeat ? 46 : 40,
+                    width: { xs: isJudgeSeat ? 36 : 30, sm: isJudgeSeat ? 46 : 40 },
+                    height: { xs: isJudgeSeat ? 36 : 30, sm: isJudgeSeat ? 46 : 40 },
                     bgcolor: "white",
                     border: isSelected 
                       ? "3px solid #ff4b5c" 
@@ -159,12 +159,12 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                       ? "3px solid #22c55e"
                       : isMe 
                       ? "3px solid #38bdf8" 
-                      : "3.5px solid #4a3e3d",
+                      : { xs: "2px solid #4a3e3d", sm: "3.5px solid #4a3e3d" },
                     boxShadow: isSelected 
                       ? "0 0 12px rgba(255,75,92,0.6)" 
                       : isSpeaking
                       ? "0 0 12px rgba(34,197,94,0.8)"
-                      : "0 4px 0 #4a3e3d",
+                      : { xs: "0 2px 0 #4a3e3d", sm: "0 4px 0 #4a3e3d" },
                     transition: "transform 0.15s, border-color 0.15s, box-shadow 0.15s",
                   }}
                 >
@@ -194,13 +194,32 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                 )}
               </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, mt: 0.8, bgcolor: isMe ? "#e0f2fe" : "rgba(255,255,255,0.9)", border: "2px solid #4a3e3d", borderRadius: "12px", px: 1, py: 0.1, boxShadow: "0 2px 0 #4a3e3d", borderColor: isSpeaking ? "#22c55e" : "#4a3e3d" }}>
+              <Box sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.3,
+                mt: 0.5,
+                bgcolor: isMe ? "#e0f2fe" : "rgba(255,255,255,0.9)",
+                border: { xs: "1.5px solid #4a3e3d", sm: "2px solid #4a3e3d" },
+                borderRadius: "10px",
+                px: { xs: 0.6, sm: 1 },
+                py: 0.1,
+                boxShadow: { xs: "0 1.5px 0 #4a3e3d", sm: "0 2px 0 #4a3e3d" },
+                borderColor: isSpeaking ? "#22c55e" : "#4a3e3d"
+              }}>
                 {isSpeaking && (
                   <Typography variant="caption" sx={{ fontSize: "0.65rem", mr: 0.1, display: "flex", alignItems: "center" }}>
                     🎙️
                   </Typography>
                 )}
-                <Typography variant="caption" fontWeight="800" sx={{ color: "#4a3e3d", fontSize: "0.68rem", maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Typography variant="caption" fontWeight="800" sx={{
+                  color: "#4a3e3d",
+                  fontSize: { xs: "0.55rem", sm: "0.68rem" },
+                  maxWidth: { xs: 45, sm: 66 },
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
                   {p.name}
                 </Typography>
                 
