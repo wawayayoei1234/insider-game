@@ -7,6 +7,7 @@ import VotingView from "./VotingView";
 import ScoreboardView from "./ScoreboardView";
 import ChatPanel from "./ChatPanel";
 import PlayerTable from "./PlayerTable";
+import useAgoraVoice from "../../hooks/useAgoraVoice";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "wss://api.insider-game.org/ws";
 const MAX_RECONNECT = 5;
@@ -37,6 +38,11 @@ export default function InsiderGamePage() {
   const [voteTarget, setVoteTarget] = useState(null);
   const [secretWord, setSecretWord] = useState("");
 
+  const { isMuted, toggleMic, speakingList, voiceActive, errorMsg: voiceError } = useAgoraVoice(
+    room?.code,
+    selfId,
+    phase === "game"
+  );
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [notice, setNotice] = useState("");
@@ -580,7 +586,7 @@ export default function InsiderGamePage() {
   const canVote = isVoting && !iAmBlocked && !iVoted && me?.role !== "judge" && !isSpectator;
 
   const sharedTableProps = {
-    players, selfId, room, isHost, voteTarget, onVote: handleVote,
+    players, selfId, room, isHost, voteTarget, onVote: handleVote, speakingList,
     onKick: (targetId) => {
       if (window.confirm("คุณต้องการเตะนักสืบคนนี้ออกจากโต๊ะประชุมจริงหรือไม่?")) {
         send({ type: "kick", targetId });
@@ -635,6 +641,22 @@ export default function InsiderGamePage() {
               📖
             </IconButton>
           </Tooltip>
+          {/* Voice Chat Connection Status Badge */}
+          {process.env.NEXT_PUBLIC_AGORA_APP_ID && (
+            <Chip 
+              size="small" 
+              label={voiceActive ? "🎙️ ไมค์พร้อมใช้" : voiceError ? "🎙️ ข้อผิดพลาดไมค์" : "🎙️ กำลังเปิดไมค์..."} 
+              sx={{ 
+                fontWeight: "900", 
+                fontSize: "0.62rem", 
+                border: "2.5px solid #4a3e3d", 
+                height: 22,
+                bgcolor: voiceActive ? "#bbf7d0" : voiceError ? "#fee2e2" : "#f1f5f9",
+                color: "#4a3e3d",
+                boxShadow: "0 2px 0 #4a3e3d"
+              }}
+            />
+          )}
         </Box>
 
         <Box sx={{ textAlign: "center", bgcolor: "#fff0f3", px: 3, py: 0.4, border: "2px solid #4a3e3d", borderRadius: "99px", boxShadow: "0 2px 0 #4a3e3d" }}>
@@ -737,6 +759,29 @@ export default function InsiderGamePage() {
         </Box>
 
         <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip title={!process.env.NEXT_PUBLIC_AGORA_APP_ID ? "ไม่ได้ตั้งค่าระบบคุยเสียง (.env)" : isMuted ? "เปิดไมโครโฟน" : "ปิดไมโครโฟน"}>
+            <span>
+              <Button
+                onClick={toggleMic}
+                disabled={!voiceActive || !process.env.NEXT_PUBLIC_AGORA_APP_ID}
+                sx={{
+                  bgcolor: isMuted ? "white" : "#bbf7d0",
+                  color: "#4a3e3d",
+                  border: "2px solid #4a3e3d",
+                  boxShadow: "0 3px 0 #4a3e3d",
+                  borderRadius: "12px",
+                  fontWeight: "900",
+                  fontSize: "0.8rem",
+                  px: 2,
+                  minWidth: 42,
+                  "&:hover": { bgcolor: isMuted ? "#f1f5f9" : "#86efac" },
+                  "&.Mui-disabled": { opacity: 0.5, bgcolor: "#e2e8f0", border: "2px solid #cbd5e1", boxShadow: "0 3px 0 #cbd5e1" }
+                }}
+              >
+                {!process.env.NEXT_PUBLIC_AGORA_APP_ID ? "🎤⚠️" : isMuted ? "🎤❌" : "🎤🟢"}
+              </Button>
+            </span>
+          </Tooltip>
           <Tooltip title={soundOn ? "ปิดเอฟเฟกต์เสียง" : "เปิดเอฟเฟกต์เสียง"}>
             <Button
               onClick={() => setSoundOn(!soundOn)}
