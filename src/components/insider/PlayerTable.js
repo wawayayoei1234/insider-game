@@ -194,17 +194,12 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                 )}
               </Box>
 
-              {/* ชื่อผู้เล่น */}
-<<<<<<< HEAD
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, mt: 0.8, bgcolor: isMe ? "#e0f2fe" : "rgba(255,255,255,0.9)", border: "2px solid #4a3e3d", borderRadius: "12px", px: 1, py: 0.1, boxShadow: "0 2px 0 #4a3e3d" }}>
-=======
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, mt: 0.8, bgcolor: isMe ? "#e0f2fe" : "rgba(255,255,255,0.9)", border: "2px solid #4a3e3d", borderRadius: "12px", px: 1, py: 0.1, boxShadow: "0 2px 0 #4a3e3d", borderColor: isSpeaking ? "#22c55e" : "#4a3e3d" }}>
                 {isSpeaking && (
                   <Typography variant="caption" sx={{ fontSize: "0.65rem", mr: 0.1, display: "flex", alignItems: "center" }}>
                     🎙️
                   </Typography>
                 )}
->>>>>>> origin/master
                 <Typography variant="caption" fontWeight="800" sx={{ color: "#4a3e3d", fontSize: "0.68rem", maxWidth: 66, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {p.name}
                 </Typography>
