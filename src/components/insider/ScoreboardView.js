@@ -14,11 +14,11 @@ export default function ScoreboardView({ room, players, insiderId, me, onNextRou
   lastVotes.forEach((v) => {
     voteCounts[v.targetId] = (voteCounts[v.targetId] || 0) + 1;
   });
-  const maxVotes = Object.values(voteCounts).length > 0 ? Math.max(...Object.values(voteCounts)) : 0;
-  const topVotedIds = Object.keys(voteCounts).filter((id) => voteCounts[id] === maxVotes);
-  
-  const insiderCaught = !!insiderId && topVotedIds.length === 1 && topVotedIds[0] === insiderId;
-  const insiderWon = !room.roundEndByTimeout && !!insiderId && !insiderCaught && lastVotes.length > 0;
+
+  // Trust the server's authoritative outcome instead of recomputing the winner
+  // from raw votes (which can disagree on tie + revote + random-tiebreak cases).
+  const insiderCaught = room.roundResult === "commons";
+  const insiderWon = room.roundResult === "insider";
 
   const isMe = (id) => me?.id === id;
   const amInsider = isMe(insiderId);
@@ -28,7 +28,7 @@ export default function ScoreboardView({ room, players, insiderId, me, onNextRou
   let resultEmoji = "🤫";
   let resultTitle = "";
   let resultDesc = "";
-  if (!room.roundEndByTimeout && lastVotes.length > 0) {
+  if (insiderWon || insiderCaught) {
     if (insiderWon) {
       if (amInsider) {
         resultEmoji = "🏆🦊";
@@ -178,9 +178,11 @@ export default function ScoreboardView({ room, players, insiderId, me, onNextRou
                   <Typography variant="body2" fontWeight="800" sx={{ color: "#4a3e3d" }}>
                     🦊 ผู้เป็นอินไซเดอร์ (Insider): <span style={{ textDecoration: "underline" }}><b>{insider.name}</b></span>
                   </Typography>
-                  <Typography variant="body2" fontWeight="900" sx={{ mt: 0.5, color: insiderWon ? "#ff4b5c" : "#22c55e" }}>
-                    ผลการแข่ง: {insiderWon ? "🏆 ฝ่าย Insider ชนะ!" : "🎉 ฝ่าย Commons ชนะ (จับโกหกได้สำเร็จ)!"}
-                  </Typography>
+                  {(insiderWon || insiderCaught) && (
+                    <Typography variant="body2" fontWeight="900" sx={{ mt: 0.5, color: insiderWon ? "#ff4b5c" : "#22c55e" }}>
+                      ผลการแข่ง: {insiderWon ? "🏆 ฝ่าย Insider ชนะ!" : "🎉 ฝ่าย Commons ชนะ (จับโกหกได้สำเร็จ)!"}
+                    </Typography>
+                  )}
                   <Divider sx={{ my: 1, borderColor: "rgba(0,0,0,0.1)" }} />
                   {room.secretWord && (
                     <Typography variant="body2" fontWeight="bold" sx={{ color: "#4a3e3d" }}>
@@ -248,8 +250,9 @@ export default function ScoreboardView({ room, players, insiderId, me, onNextRou
             <Paper variant="outlined" sx={{ p: 1.5, borderRadius: "14px", bgcolor: "#fffdf5", border: "2px solid #4a3e3d" }}>
               <Typography variant="caption" fontWeight="bold" sx={{ color: "#854d0e", display: "block" }}>
                 💡 <b>คำอธิบายการคิดคะแนนและผลโหวต:</b>
+                <br />• หากผลโหวตเสมอกัน ➡️ คนที่คะแนนเท่ากันจะถูกตัดสิทธิ์ แล้วโหวตใหม่จนกว่าจะได้ผู้ต้องสงสัยเพียงคนเดียว
                 <br />• หาก Commons ชนะ (โหวตจับกุม Insider สำเร็จ) ➡️ Commons ทุกคนได้ **+1 แต้ม** (ยกเว้นกรรมการและคนทายคำปริศนาถูก)
-                <br />• หาก Insider ชนะ (รอดการจับกุม หรือผลโหวตเสมอกัน) ➡️ Insider ได้ **+2 แต้ม** และคนเดาคำถูกได้ **+1 แต้ม**
+                <br />• หาก Insider ชนะ (รอดการจับกุม) ➡️ Insider ได้ **+2 แต้ม** และคนเดาคำถูกได้ **+1 แต้ม**
               </Typography>
             </Paper>
 

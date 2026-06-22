@@ -204,7 +204,7 @@ export default function PlayerTable({ players, selfId, room, isHost, onKick, onV
                   {p.name}
                 </Typography>
                 
-                {isHost && !isMe && (
+                {isHost && !isMe && room?.state === "lobby" && (
                   <IconButton
                     size="small"
                     onClick={(e) => { e.stopPropagation(); onKick && onKick(p.id); }}

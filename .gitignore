@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but DO commit the production config so prod builds never bake a LAN dev IP.
+# These are all NEXT_PUBLIC_* values (already exposed in the client bundle).
+!.env.production
 
 # vercel
 .vercel

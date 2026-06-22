@@ -97,7 +97,9 @@
       "Bash(npm run *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('agora dep:', \\(p.dependencies&&p.dependencies['agora-rtc-sdk-ng']\\)||\\(p.devDependencies&&p.devDependencies['agora-rtc-sdk-ng']\\)||'NOT LISTED'\\)\")",
       "Bash(node -e ' *)",
-      "Bash(bun run *)"
+      "Bash(bun run *)",
+      "Bash(go test *)",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\kwan5\\.openclaw\\agents\\main\\sessions",

@@ -19,14 +19,21 @@ export default function LobbyView({
   const [useRandom, setUseRandom] = useState(false);
   const [category, setCategory] = useState("");
 
+  const activeCount = players.filter(
+    (p) => p.connected !== false && !p.spectator
+  ).length;
+
   const nonJudgeCount = players.filter(
     (p) => p.id !== room.judgeId && p.connected !== false && !p.spectator
   ).length;
 
+  // Need a judge + at least 3 other players (4 total). With only 3 the vote
+  // degenerates into a 50/50 coin flip, so 4 is the real minimum.
+  const enoughPlayers = nonJudgeCount >= 3;
+
   const canStart =
-    // !!room.judgeId &&   // Wait! In lobby, the host chooses a judge first. Let's make sure it's valid.
     !!room.judgeId &&
-    nonJudgeCount >= 2 &&
+    enoughPlayers &&
     (useRandom || secretWord.trim() !== "");
 
   const handleStart = () => {
@@ -57,6 +64,15 @@ export default function LobbyView({
       <Typography variant="body2" sx={{ color: "#7a6e6d", fontWeight: "600" }}>
         ก่อนเริ่มเกม โปรดเลือกผู้เล่นที่จะทำหน้าที่เป็น ⚖️ <b>กรรมการ (Judge)</b> และตั้งค่าคำศัพท์ปริศนาด้านล่างนี้
       </Typography>
+
+      {/* แจ้งเตือนจำนวนผู้เล่นขั้นต่ำให้ทุกคนเห็น */}
+      {activeCount < 4 && (
+        <Box sx={{ p: 1.5, bgcolor: "#fffbeb", borderRadius: "14px", border: "2px solid #eab308", boxShadow: "0 3px 0 #eab308" }}>
+          <Typography variant="body2" fontWeight="800" sx={{ color: "#854d0e" }}>
+            👥 ต้องมีผู้เล่นอย่างน้อย <b>4 คน</b> จึงจะเริ่มเกมได้ (ตอนนี้มี {activeCount} คน) — รออีก {4 - activeCount} คน
+          </Typography>
+        </Box>
+      )}
 
       <Divider sx={{ borderStyle: "dashed", borderColor: "#4a3e3d", borderWidth: "1.5px" }} />
 
@@ -231,8 +247,8 @@ export default function LobbyView({
             🏁 เริ่มเกมจับผิด (Start Game)
           </Button>
 
-          <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "600", mt: 0.5 }}>
-            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + ผู้เล่นอื่นอย่างน้อย 2 คน และกรอกคำใบ้แล้ว (แนะนำ 4 คนขึ้นไปเพื่อความสนุก)
+          <Typography variant="caption" sx={{ color: enoughPlayers ? "#7a6e6d" : "#dc2626", fontWeight: "600", mt: 0.5 }}>
+            *เงื่อนไขการเริ่มรอบ: ต้องมีกรรมการ + ผู้เล่นอื่นอย่างน้อย 3 คน (รวม 4 คนขึ้นไป) และกรอกคำปริศนาแล้ว
           </Typography>
         </Box>
       ) : (

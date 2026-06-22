@@ -62,7 +62,10 @@ export default function InsiderGamePage() {
   const prevStateRef = useRef(null);
 
   useEffect(() => {
+    // Reset the local vote selection whenever the server moves us into a fresh
+    // voting phase — syncing local UI state to external (server) state.
     if (room?.state === "voting") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVoteTarget(null);
     }
   }, [room?.state]);
@@ -112,23 +115,6 @@ export default function InsiderGamePage() {
     const t = room?.timer ?? 0;
     if (t > 0 && t <= 10) playBeep(900, 0.07, "square", 0.12);
   }, [room?.timer]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("insider_session");
-    if (!saved) return;
-    try {
-      const creds = JSON.parse(saved);
-      setRoomCodeInput(creds.roomCode);
-      setNameInput(creds.name);
-      savedCredsRef.current = creds;
-      setReconnecting(true);
-      reconnectTimerRef.current = setTimeout(() => {
-        connectToRoom("join", creds);
-      }, 500);
-    } catch {
-      localStorage.removeItem("insider_session");
-    }
-  }, []);
 
   const clearSession = () => {
     inGameRef.current = false;
@@ -340,6 +326,28 @@ export default function InsiderGamePage() {
     }
     socket.send(JSON.stringify(payload));
   };
+
+  // On mount: try to resume a saved session. Declared after connectToRoom so it
+  // can call it directly. Mount-only effect — deps intentionally empty.
+  useEffect(() => {
+    const saved = localStorage.getItem("insider_session");
+    if (!saved) return;
+    try {
+      const creds = JSON.parse(saved);
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setRoomCodeInput(creds.roomCode);
+      setNameInput(creds.name);
+      savedCredsRef.current = creds;
+      setReconnecting(true);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      reconnectTimerRef.current = setTimeout(() => {
+        connectToRoom("join", creds);
+      }, 500);
+    } catch {
+      localStorage.removeItem("insider_session");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const players = useMemo(() => {
     if (!room || !room.players) return [];
@@ -949,7 +957,8 @@ export default function InsiderGamePage() {
               <Typography variant="caption" sx={{ color: "#7a6e6d", fontWeight: "bold", pl: 1, display: "block" }}>
                 • หลังทายถูก ทุกคนจะร่วมกันพูดคุยและกดโหวตผู้ต้องสงสัยบน **"โต๊ะประชุมหลัก"**
                 <br />• หากโหวตจับ Insider ได้ถูกต้อง ฝ่าย Commons จะชนะ
-                <br />• **หากโหวตจับผิดคน หรือผลโหวตเสมอกัน** ถือว่าโหวตล้มเหลว ฝ่าย Insider จะเป็นผู้ชนะ
+                <br />• **หากโหวตจับผิดคน** ถือว่าโหวตล้มเหลว ฝ่าย Insider จะเป็นผู้ชนะ
+                <br />• **หากผลโหวตเสมอกัน** คนที่คะแนนเท่ากันจะถูกตัดสิทธิ์ แล้วโหวตใหม่จนกว่าจะเหลือผู้ต้องสงสัยเพียงคนเดียว
               </Typography>
             </Box>
 
@@ -959,7 +968,8 @@ export default function InsiderGamePage() {
             <Box sx={{ p: 1.5, bgcolor: "#fffdf5", borderRadius: "14px", border: "2px solid #4a3e3d" }}>
               <Typography variant="caption" sx={{ color: "#854d0e", fontWeight: "bold", display: "block" }}>
                 • **หากจับกุม Insider สำเร็จ**: ผู้เล่นทั่วไป (Commons) ได้คนละ **+1 คะแนน** (ยกเว้นกรรมการ และคนทายคำปริศนาถูก)
-                <br />• **หาก Insider รอดการจับกุม (หรือโหวตเสมอ)**: อินไซเดอร์ ได้ **+2 คะแนน** และคนทายคำถูก ได้ **+1 คะแนน**
+                <br />• **หาก Insider รอดการจับกุม**: อินไซเดอร์ ได้ **+2 คะแนน** และคนทายคำถูก ได้ **+1 คะแนน**
+                <br />• **หากผลโหวตเสมอ**: จะตัดสิทธิ์ผู้ที่คะแนนเท่ากันแล้วโหวตใหม่จนกว่าจะเหลือคนเดียว
               </Typography>
             </Box>
           </Box>
